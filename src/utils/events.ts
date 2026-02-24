@@ -10,7 +10,7 @@ const registeredHandlers: Array<{ event: string; callback: EventCallback }> = []
  * Register an event handler on ST's event source, tracking it for cleanup.
  */
 export function onSTEvent(event: string, callback: EventCallback): void {
-  SillyTavern.eventSource.on(event, callback);
+  SillyTavern.getContext().eventSource.on(event, callback);
   registeredHandlers.push({ event, callback });
 }
 
@@ -18,7 +18,7 @@ export function onSTEvent(event: string, callback: EventCallback): void {
  * Remove a specific event handler.
  */
 export function offSTEvent(event: string, callback: EventCallback): void {
-  SillyTavern.eventSource.off(event, callback);
+  SillyTavern.getContext().eventSource.off(event, callback);
   const idx = registeredHandlers.findIndex(
     (h) => h.event === event && h.callback === callback,
   );
@@ -30,7 +30,7 @@ export function offSTEvent(event: string, callback: EventCallback): void {
  */
 export function removeAllHandlers(): void {
   for (const { event, callback } of registeredHandlers) {
-    SillyTavern.eventSource.off(event, callback);
+    SillyTavern.getContext().eventSource.off(event, callback);
   }
   registeredHandlers.length = 0;
 }

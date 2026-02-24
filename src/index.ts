@@ -43,12 +43,13 @@ function init(): void {
  * Initialize extension settings with defaults.
  */
 function initializeSettings(): void {
-  const extensionSettings = SillyTavern.extension_settings as Record<string, unknown>;
+  const ctx = SillyTavern.getContext();
+  const extensionSettings = ctx.extensionSettings;
   const moduleName = getModuleName();
 
   if (!extensionSettings[moduleName]) {
     extensionSettings[moduleName] = getDefaultSettings();
-    SillyTavern.saveSettingsDebounced();
+    ctx.saveSettingsDebounced();
   } else {
     // Merge any missing default keys into existing settings
     const defaults = getDefaultSettings();
@@ -63,7 +64,7 @@ function initializeSettings(): void {
     }
 
     if (changed) {
-      SillyTavern.saveSettingsDebounced();
+      ctx.saveSettingsDebounced();
     }
   }
 }
@@ -73,7 +74,7 @@ function initializeSettings(): void {
  */
 function registerSTEvents(): void {
   try {
-    const eventTypes = SillyTavern.event_types;
+    const { eventTypes } = SillyTavern.getContext();
 
     // Listen for world info updates to refresh graph if drawer is open
     if (eventTypes.WORLDINFO_UPDATED) {

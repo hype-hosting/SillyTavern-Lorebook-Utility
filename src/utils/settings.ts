@@ -36,7 +36,7 @@ const DEFAULT_SETTINGS: LorebookStudioSettings = {
 };
 
 export function getSettings(): LorebookStudioSettings {
-  const extensionSettings = SillyTavern.extension_settings as Record<string, unknown>;
+  const { extensionSettings } = SillyTavern.getContext();
   if (!extensionSettings[MODULE_NAME]) {
     extensionSettings[MODULE_NAME] = { ...DEFAULT_SETTINGS };
   }
@@ -50,7 +50,7 @@ export function updateSettings(partial: Partial<LorebookStudioSettings>): void {
 }
 
 export function saveSettings(): void {
-  SillyTavern.saveSettingsDebounced();
+  SillyTavern.getContext().saveSettingsDebounced();
 }
 
 export function getModuleName(): string {
