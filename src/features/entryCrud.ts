@@ -5,17 +5,13 @@
 
 import { createEntry, deleteEntry, updateEntry, getEntries, LorebookEntry } from '../data/lorebookData';
 import { removeLinksForEntry } from '../data/manualLinks';
-import { EventBus, STUDIO_EVENTS } from '../utils/events';
 
 /**
  * Create a new entry and notify the graph.
+ * Note: the data layer (lorebookData.ts) emits ENTRY_CREATED internally.
  */
 export async function createNewEntry(bookName: string): Promise<LorebookEntry | null> {
-  const entry = await createEntry(bookName);
-  if (entry) {
-    EventBus.emit(STUDIO_EVENTS.ENTRY_CREATED, { bookName, entry });
-  }
-  return entry;
+  return await createEntry(bookName);
 }
 
 /**
@@ -55,17 +51,14 @@ export async function duplicateEntryById(
 
 /**
  * Delete an entry and clean up related manual links.
+ * Note: the data layer (lorebookData.ts) emits ENTRY_DELETED internally.
  */
 export function deleteEntryById(bookName: string, uid: number): boolean {
   // Remove manual links referencing this entry
   removeLinksForEntry(bookName, String(uid));
 
   // Delete the entry itself
-  const success = deleteEntry(bookName, uid);
-  if (success) {
-    EventBus.emit(STUDIO_EVENTS.ENTRY_DELETED, { bookName, uid });
-  }
-  return success;
+  return deleteEntry(bookName, uid);
 }
 
 /**

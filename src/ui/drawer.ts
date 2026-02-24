@@ -5,7 +5,7 @@
 
 import drawerHtml from '../templates/drawer.html';
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
-import { getEntries, getWorldInfoBookNames, getActiveBookName } from '../data/lorebookData';
+import { getEntries, getWorldInfoBookNames, getActiveBookName, loadBookData } from '../data/lorebookData';
 import { detectRecursions, clearRecursionCache } from '../data/recursionDetector';
 import { getManualLinks } from '../data/manualLinks';
 import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges } from '../graph/graphManager';
@@ -229,13 +229,22 @@ function populateBookSelector(): void {
   }
 }
 
-function loadBook(bookName: string): void {
+async function loadBook(bookName: string): Promise<void> {
   currentBookName = bookName;
   clearRecursionCache();
 
   const container = document.getElementById('ls-graph-container');
   if (!container) return;
 
+  // Show loading state
+  container.innerHTML = `
+    <div class="ls-empty-state">
+      <p>Loading "${bookName}"...</p>
+    </div>
+  `;
+
+  // Load data from SillyTavern's API
+  await loadBookData(bookName);
   const entries = getEntries(bookName);
 
   if (entries.length === 0) {
@@ -258,9 +267,11 @@ function loadBook(bookName: string): void {
   initGraph(container, entries, recursionEdges, manualLinksList, bookName);
 }
 
-function refreshCurrentGraph(): void {
+async function refreshCurrentGraph(): Promise<void> {
   if (!currentBookName) return;
 
+  // Re-load fresh data from ST
+  await loadBookData(currentBookName);
   const entries = getEntries(currentBookName);
   clearRecursionCache();
   const recursionEdges = detectRecursions(entries);

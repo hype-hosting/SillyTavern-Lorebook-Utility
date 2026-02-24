@@ -13,8 +13,12 @@ declare global {
     eventTypes: Record<string, string>;
     chat: unknown[];
     characters: unknown[];
-    worldInfoData: Record<string, WorldInfoBook>;
-    getWorldInfoData(): Record<string, WorldInfoBook>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    loadWorldInfo(name: string): Promise<any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    saveWorldInfo(name: string, data: any): Promise<void>;
+    reloadWorldInfoEditor(): void;
+    updateWorldInfoList(): void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     renderExtensionTemplateAsync(extensionName: string, templateId: string, data?: Record<string, any>): Promise<string>;
     name1: string;
