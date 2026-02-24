@@ -3,20 +3,20 @@ export {};
 declare global {
   interface SillyTavernContext {
     getContext(): STContext;
-    eventSource: STEventSource;
-    event_types: Record<string, string>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    extension_settings: Record<string, any>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    renderExtensionTemplateAsync(extensionName: string, templateId: string, data?: Record<string, any>): Promise<string>;
-    saveSettingsDebounced(): void;
   }
 
   interface STContext {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    extensionSettings: Record<string, any>;
+    saveSettingsDebounced(): void;
+    eventSource: STEventSource;
+    eventTypes: Record<string, string>;
     chat: unknown[];
     characters: unknown[];
     worldInfoData: Record<string, WorldInfoBook>;
     getWorldInfoData(): Record<string, WorldInfoBook>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    renderExtensionTemplateAsync(extensionName: string, templateId: string, data?: Record<string, any>): Promise<string>;
     name1: string;
     name2: string;
     chatMetadata: Record<string, unknown>;
