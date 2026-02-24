@@ -1,0 +1,12 @@
+{
+  "display_name": "Lorebook Studio",
+  "loading_order": 100,
+  "requires": [],
+  "optional": [],
+  "js": "dist/index.js",
+  "css": "",
+  "author": "Hyperion",
+  "version": "1.0.0",
+  "homePage": "https://github.com/hype-hosting/SillyTavern-Lorebook-Utility",
+  "auto_update": true
+}

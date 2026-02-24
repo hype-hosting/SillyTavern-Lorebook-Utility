@@ -1,0 +1,167 @@
+<div id="ls-drawer-overlay" class="ls-overlay">
+  <div id="ls-drawer" class="ls-drawer">
+    <!-- Toolbar -->
+    <div id="ls-toolbar" class="ls-toolbar">
+      <div class="ls-toolbar-left">
+        <span class="ls-toolbar-title">Lorebook Studio</span>
+        <select id="ls-book-selector" class="ls-select" title="Select lorebook">
+          <option value="">-- Select Lorebook --</option>
+        </select>
+      </div>
+      <div class="ls-toolbar-center">
+        <div class="ls-search-wrapper">
+          <input type="text" id="ls-search-input" class="ls-input" placeholder="Search entries..." />
+          <button id="ls-search-clear" class="ls-btn ls-btn-icon" title="Clear search">&times;</button>
+        </div>
+        <div class="ls-toolbar-filters">
+          <button id="ls-filter-orphans" class="ls-btn ls-btn-sm" title="Show orphan entries">Orphans</button>
+          <button id="ls-filter-disabled" class="ls-btn ls-btn-sm" title="Show disabled entries">Disabled</button>
+        </div>
+      </div>
+      <div class="ls-toolbar-right">
+        <div class="ls-layout-group">
+          <label class="ls-label">Layout:</label>
+          <select id="ls-layout-selector" class="ls-select">
+            <option value="cose">Force-Directed</option>
+            <option value="grid">Grid</option>
+            <option value="circle">Circle</option>
+            <option value="breadthfirst">Hierarchical</option>
+          </select>
+        </div>
+        <div class="ls-zoom-group">
+          <button id="ls-zoom-in" class="ls-btn ls-btn-icon" title="Zoom in">+</button>
+          <button id="ls-zoom-out" class="ls-btn ls-btn-icon" title="Zoom out">&minus;</button>
+          <button id="ls-zoom-fit" class="ls-btn ls-btn-icon" title="Fit all">&#x26F6;</button>
+        </div>
+        <div class="ls-toggle-group">
+          <label class="ls-toggle" title="Show auto-detected links">
+            <input type="checkbox" id="ls-toggle-auto-links" checked />
+            <span>Auto</span>
+          </label>
+          <label class="ls-toggle" title="Show manual links">
+            <input type="checkbox" id="ls-toggle-manual-links" checked />
+            <span>Manual</span>
+          </label>
+        </div>
+        <button id="ls-btn-stats" class="ls-btn" title="Statistics">Stats</button>
+        <button id="ls-btn-add-entry" class="ls-btn ls-btn-primary" title="Add new entry">+ Entry</button>
+        <button id="ls-btn-close" class="ls-btn ls-btn-icon ls-btn-close" title="Close Lorebook Studio">&times;</button>
+      </div>
+    </div>
+
+    <!-- Main content area -->
+    <div id="ls-content" class="ls-content">
+      <!-- Graph canvas -->
+      <div id="ls-graph-container" class="ls-graph-container"></div>
+
+      <!-- Sidebar (hidden by default, shown when entry selected) -->
+      <div id="ls-sidebar" class="ls-sidebar ls-sidebar-hidden">
+        <div class="ls-sidebar-header">
+          <h3 id="ls-sidebar-title">Entry Details</h3>
+          <button id="ls-sidebar-close" class="ls-btn ls-btn-icon" title="Close sidebar">&times;</button>
+        </div>
+        <div class="ls-sidebar-body">
+          <div class="ls-field">
+            <label class="ls-label" for="ls-entry-comment">Name / Comment</label>
+            <input type="text" id="ls-entry-comment" class="ls-input" />
+          </div>
+          <div class="ls-field">
+            <label class="ls-label" for="ls-entry-keys">Primary Keys <span class="ls-hint">(comma-separated)</span></label>
+            <input type="text" id="ls-entry-keys" class="ls-input" />
+          </div>
+          <div class="ls-field">
+            <label class="ls-label" for="ls-entry-keysecondary">Secondary Keys <span class="ls-hint">(comma-separated)</span></label>
+            <input type="text" id="ls-entry-keysecondary" class="ls-input" />
+          </div>
+          <div class="ls-field">
+            <label class="ls-label" for="ls-entry-content">Content</label>
+            <textarea id="ls-entry-content" class="ls-textarea" rows="8"></textarea>
+          </div>
+          <div class="ls-field-row">
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-position">Position</label>
+              <select id="ls-entry-position" class="ls-select">
+                <option value="0">Before Character Defs</option>
+                <option value="1">After Character Defs</option>
+                <option value="2">Before Example Messages</option>
+                <option value="3">After Example Messages</option>
+                <option value="4">Top of AN</option>
+                <option value="5">Bottom of AN</option>
+                <option value="6">@ Depth</option>
+              </select>
+            </div>
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-depth">Depth</label>
+              <input type="number" id="ls-entry-depth" class="ls-input" min="0" max="999" />
+            </div>
+          </div>
+          <div class="ls-field-row">
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-order">Order</label>
+              <input type="number" id="ls-entry-order" class="ls-input" min="0" max="999" />
+            </div>
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-probability">Probability %</label>
+              <input type="number" id="ls-entry-probability" class="ls-input" min="0" max="100" />
+            </div>
+          </div>
+          <div class="ls-field">
+            <label class="ls-label" for="ls-entry-group">Group</label>
+            <input type="text" id="ls-entry-group" class="ls-input" />
+          </div>
+          <div class="ls-field-row ls-toggles">
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-enabled" />
+              <span>Enabled</span>
+            </label>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-constant" />
+              <span>Constant</span>
+            </label>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-selective" />
+              <span>Selective</span>
+            </label>
+          </div>
+          <div class="ls-field-row ls-toggles">
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-exclude-recursion" />
+              <span>Exclude Recursion</span>
+            </label>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-prevent-recursion" />
+              <span>Prevent Recursion</span>
+            </label>
+          </div>
+
+          <!-- Manual link creation -->
+          <div class="ls-field ls-manual-links-section">
+            <label class="ls-label">Manual Links</label>
+            <div id="ls-manual-links-list" class="ls-manual-links-list"></div>
+            <div class="ls-field-row">
+              <select id="ls-link-target-select" class="ls-select ls-flex-grow">
+                <option value="">-- Connect to... --</option>
+              </select>
+              <button id="ls-btn-add-link" class="ls-btn ls-btn-sm ls-btn-primary">Link</button>
+            </div>
+          </div>
+        </div>
+        <div class="ls-sidebar-footer">
+          <button id="ls-btn-save-entry" class="ls-btn ls-btn-primary">Save</button>
+          <button id="ls-btn-revert-entry" class="ls-btn">Revert</button>
+          <button id="ls-btn-duplicate-entry" class="ls-btn">Duplicate</button>
+          <button id="ls-btn-delete-entry" class="ls-btn ls-btn-danger">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats panel (hidden by default) -->
+    <div id="ls-stats-panel" class="ls-stats-panel ls-stats-hidden">
+      <div class="ls-stats-header">
+        <h3>Lorebook Statistics</h3>
+        <button id="ls-stats-close" class="ls-btn ls-btn-icon">&times;</button>
+      </div>
+      <div id="ls-stats-body" class="ls-stats-body"></div>
+    </div>
+  </div>
+</div>
