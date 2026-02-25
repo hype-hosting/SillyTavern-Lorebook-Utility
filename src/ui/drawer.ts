@@ -316,11 +316,11 @@ async function loadBook(bookName: string): Promise<void> {
   updateStatusBar(`Loaded "${bookName}"`, `${entries.length} entries`);
 }
 
-async function refreshCurrentGraph(): Promise<void> {
+function refreshCurrentGraph(): void {
   if (!currentBookName) return;
 
-  // Re-load fresh data from ST
-  await loadBookData(currentBookName);
+  // Use cached data (already updated by updateEntry/createEntry/deleteEntry)
+  // Do NOT re-load from backend — that races with the fire-and-forget save
   const entries = getEntries(currentBookName);
   clearRecursionCache();
   const recursionEdges = detectRecursions(entries);
