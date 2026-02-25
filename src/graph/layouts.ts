@@ -15,23 +15,29 @@ export function getLayoutConfig(
   nodeCount: number,
 ): LayoutConfig {
   switch (name) {
-    case 'cose':
+    case 'cose': {
+      // Scale parameters with graph size for better spacing
+      const repulsion = 8000 + nodeCount * 50;
+      const edgeLen = 120 + Math.min(nodeCount * 0.8, 200);
+      const grav = Math.max(0.15, 1 - nodeCount * 0.005);
+      const iters = Math.max(1000, nodeCount * 10);
       return {
         name: 'cose',
-        animate: nodeCount < 100,
+        animate: nodeCount < 80,
         animationDuration: 500,
-        nodeRepulsion: () => 8000,
-        idealEdgeLength: () => 120,
-        edgeElasticity: () => 100,
+        nodeRepulsion: () => repulsion,
+        idealEdgeLength: () => edgeLen,
+        edgeElasticity: () => 45,
         nestingFactor: 1.2,
-        gravity: 1,
-        numIter: 1000,
-        initialTemp: 200,
-        coolingFactor: 0.95,
-        minTemp: 1.0,
-        padding: 50,
-        randomize: false,
+        gravity: grav,
+        numIter: iters,
+        initialTemp: 300,
+        coolingFactor: 0.93,
+        minTemp: 0.5,
+        padding: 60,
+        randomize: true,
       };
+    }
 
     case 'grid':
       return {
