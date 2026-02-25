@@ -44,9 +44,16 @@
           </label>
         </div>
         <button id="ls-btn-stats" class="ls-btn" title="Statistics">Stats</button>
+        <button id="ls-btn-connect" class="ls-btn" title="Connect two entries (click source then target)">Link</button>
         <button id="ls-btn-add-entry" class="ls-btn ls-btn-primary" title="Add new entry">+ Entry</button>
         <button id="ls-btn-close" class="ls-btn ls-btn-icon ls-btn-close" title="Close Lorebook Studio">&times;</button>
       </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="ls-status-bar" class="ls-status-bar">
+      <span id="ls-status-text">Select a lorebook to begin</span>
+      <span id="ls-entry-count"></span>
     </div>
 
     <!-- Main content area -->
@@ -163,5 +170,8 @@
       </div>
       <div id="ls-stats-body" class="ls-stats-body"></div>
     </div>
+
+    <!-- Tooltip (positioned via JS, hidden by default) -->
+    <div id="ls-tooltip" class="ls-tooltip ls-tooltip-hidden"></div>
   </div>
 </div>

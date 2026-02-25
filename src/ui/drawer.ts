@@ -13,6 +13,11 @@ import { LayoutName } from '../graph/layouts';
 import { initToolbarEvents } from './toolbar';
 import { initSidebar, openSidebar, closeSidebar } from './sidebar';
 import { initStatsPanel } from './statsPanel';
+import { initContextMenu } from './contextMenu';
+import { initConnectMode, exitConnectMode, isConnectModeActive } from './connectMode';
+import { getSelectedNodeUid } from '../graph/graphManager';
+import { deleteEntryById, duplicateEntryById } from '../features/entryCrud';
+import { focusNode } from '../graph/graphManager';
 
 let isOpen = false;
 let currentBookName: string | null = null;
@@ -40,10 +45,49 @@ export function initDrawer(): void {
     }
   });
 
-  // ESC key to close
+  // Keyboard shortcuts (only when drawer is open)
   document.addEventListener('keydown', (evt) => {
-    if (evt.key === 'Escape' && isOpen) {
-      closeDrawer();
+    if (!isOpen) return;
+
+    if (evt.key === 'Escape') {
+      // Priority: connect mode > sidebar > drawer
+      if (isConnectModeActive()) {
+        exitConnectMode();
+      } else {
+        const sidebar = document.getElementById('ls-sidebar');
+        if (sidebar && !sidebar.classList.contains('ls-sidebar-hidden')) {
+          closeSidebar();
+        } else {
+          closeDrawer();
+        }
+      }
+      return;
+    }
+
+    // Delete selected node
+    if (evt.key === 'Delete' && !isConnectModeActive()) {
+      const uid = getSelectedNodeUid();
+      if (uid !== null && currentBookName) {
+        const entries = getEntries(currentBookName);
+        const entry = entries.find((e) => e.uid === uid);
+        const name = entry?.comment || `Entry ${uid}`;
+        if (confirm(`Delete "${name}"?\n\nThis cannot be undone.`)) {
+          deleteEntryById(currentBookName, uid);
+        }
+      }
+      return;
+    }
+
+    // Ctrl+D: duplicate selected node
+    if (evt.key === 'd' && (evt.ctrlKey || evt.metaKey) && !isConnectModeActive()) {
+      evt.preventDefault();
+      const uid = getSelectedNodeUid();
+      if (uid !== null && currentBookName) {
+        duplicateEntryById(currentBookName, uid).then((newEntry) => {
+          if (newEntry) focusNode(String(newEntry.uid));
+        });
+      }
+      return;
     }
   });
 
@@ -88,6 +132,8 @@ export function initDrawer(): void {
   initToolbarEvents();
   initSidebar();
   initStatsPanel();
+  initContextMenu();
+  initConnectMode();
 
   // Listen for internal events that require graph refresh
   EventBus.on(STUDIO_EVENTS.ENTRY_UPDATED, () => refreshCurrentGraph());
@@ -265,6 +311,9 @@ async function loadBook(bookName: string): Promise<void> {
   const manualLinksList = getManualLinks(bookName);
 
   initGraph(container, entries, recursionEdges, manualLinksList, bookName);
+
+  // Update status bar
+  updateStatusBar(`Loaded "${bookName}"`, `${entries.length} entries`);
 }
 
 async function refreshCurrentGraph(): Promise<void> {
@@ -278,4 +327,18 @@ async function refreshCurrentGraph(): Promise<void> {
   const manualLinksList = getManualLinks(currentBookName);
 
   refreshGraph(entries, recursionEdges, manualLinksList);
+
+  // Update entry count in status bar
+  updateStatusBar(undefined, `${entries.length} entries`);
+}
+
+function updateStatusBar(text?: string, count?: string): void {
+  if (text !== undefined) {
+    const statusText = document.getElementById('ls-status-text');
+    if (statusText) statusText.textContent = text;
+  }
+  if (count !== undefined) {
+    const entryCount = document.getElementById('ls-entry-count');
+    if (entryCount) entryCount.textContent = count;
+  }
 }

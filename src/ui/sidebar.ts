@@ -5,7 +5,7 @@
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import { LorebookEntry, getEntries, updateEntry, deleteEntry, createEntry } from '../data/lorebookData';
 import { addManualLink, removeManualLink, getLinksForEntry } from '../data/manualLinks';
-import { focusNode } from '../graph/graphManager';
+import { focusNode, resizeGraph } from '../graph/graphManager';
 import { getCurrentBookName } from './drawer';
 
 let selectedEntry: LorebookEntry | null = null;
@@ -64,6 +64,8 @@ export function initSidebar(): void {
 export function openSidebar(): void {
   const sidebar = document.getElementById('ls-sidebar');
   sidebar?.classList.remove('ls-sidebar-hidden');
+  // Resize graph after sidebar transition completes
+  setTimeout(() => resizeGraph(), 350);
 }
 
 /**
@@ -74,6 +76,8 @@ export function closeSidebar(): void {
   sidebar?.classList.add('ls-sidebar-hidden');
   selectedEntry = null;
   originalEntry = null;
+  // Resize graph after sidebar transition completes
+  setTimeout(() => resizeGraph(), 350);
 }
 
 // --- Internal ---

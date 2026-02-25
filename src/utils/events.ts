@@ -86,4 +86,6 @@ export const STUDIO_EVENTS = {
   GRAPH_REFRESH: 'ls:graph-refresh',
   DRAWER_OPENED: 'ls:drawer-opened',
   DRAWER_CLOSED: 'ls:drawer-closed',
+  CONNECT_MODE_START: 'ls:connect-mode-start',
+  CONNECT_MODE_END: 'ls:connect-mode-end',
 } as const;

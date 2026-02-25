@@ -11,8 +11,8 @@ export function getNodeStylesheet(): StyleDef[] {
       selector: 'node',
       style: {
         'shape': 'roundrectangle',
-        'width': 180,
-        'height': 70,
+        'width': 220,
+        'height': 80,
         'background-color': '#4a9eff',
         'border-width': 2,
         'border-color': '#3a8eef',
@@ -20,12 +20,12 @@ export function getNodeStylesheet(): StyleDef[] {
         'text-valign': 'center',
         'text-halign': 'center',
         'text-wrap': 'wrap',
-        'text-max-width': '160px',
+        'text-max-width': '200px',
         'font-size': 12,
+        'font-weight': 'bold',
         'color': '#ffffff',
         'text-outline-width': 0,
-        'padding': '10px',
-        'min-zoomed-font-size': 8,
+        'padding': 10,
       },
     },
     // Disabled entries
@@ -34,6 +34,7 @@ export function getNodeStylesheet(): StyleDef[] {
       style: {
         'background-color': '#6b7280',
         'border-color': '#4b5563',
+        'border-style': 'dashed',
         'color': '#d1d5db',
         'opacity': 0.7,
       },
@@ -44,6 +45,7 @@ export function getNodeStylesheet(): StyleDef[] {
       style: {
         'border-color': '#10b981',
         'border-width': 3,
+        'background-color': '#2d4a5e',
       },
     },
     // Selected node
@@ -56,20 +58,22 @@ export function getNodeStylesheet(): StyleDef[] {
         'color': '#1a1a2e',
       },
     },
-    // Orphan nodes (no connections) - indicated by red border
+    // Orphan nodes (no connections) - red dashed border + subtle tint
     {
       selector: 'node[?orphan]',
       style: {
         'border-color': '#ef4444',
         'border-style': 'dashed',
+        'border-width': 2,
+        'background-color': '#3a2020',
       },
     },
     // Nodes with many connections - slightly larger
     {
       selector: 'node[connectionCount > 5]',
       style: {
-        'width': 200,
-        'height': 80,
+        'width': 240,
+        'height': 90,
         'font-size': 13,
       },
     },
@@ -95,6 +99,19 @@ export function getNodeStylesheet(): StyleDef[] {
       style: {
         'border-width': 3,
         'border-color': '#ffffff',
+      },
+    },
+    // Connect mode: source node glow
+    {
+      selector: 'node.ls-connect-source',
+      style: {
+        'border-width': 4,
+        'border-color': '#f472b6',
+        'shadow-blur': 15,
+        'shadow-color': '#f472b6',
+        'shadow-opacity': 0.6,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
       },
     },
   ];

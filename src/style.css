@@ -569,3 +569,103 @@
 .ls-stats-body::-webkit-scrollbar-thumb:hover {
   background: var(--ls-border-light);
 }
+
+/* --- Tooltip --- */
+.ls-tooltip {
+  position: fixed;
+  z-index: 100001;
+  max-width: 320px;
+  background: var(--ls-bg-secondary);
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  pointer-events: none;
+}
+
+.ls-tooltip-hidden {
+  display: none;
+}
+
+.ls-tooltip-name {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--ls-text-primary);
+}
+
+.ls-tooltip-badges {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.ls-tooltip-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.ls-tooltip-badge-constant {
+  background: var(--ls-success);
+  color: #fff;
+}
+
+.ls-tooltip-badge-disabled {
+  background: var(--ls-node-disabled);
+  color: #fff;
+}
+
+.ls-tooltip-badge-selective {
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.ls-tooltip-keys {
+  font-size: 11px;
+  color: var(--ls-text-secondary);
+  margin-bottom: 4px;
+}
+
+.ls-tooltip-content {
+  font-size: 11px;
+  color: var(--ls-text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ls-tooltip-meta {
+  font-size: 10px;
+  color: var(--ls-text-muted);
+  margin-top: 4px;
+  border-top: 1px solid var(--ls-border);
+  padding-top: 4px;
+}
+
+/* --- Status Bar --- */
+.ls-status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 16px;
+  background: var(--ls-bg-tertiary);
+  font-size: 11px;
+  color: var(--ls-text-secondary);
+  border-bottom: 1px solid var(--ls-border);
+  flex-shrink: 0;
+}
+
+/* --- Connect Mode Status --- */
+.ls-connect-status {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ls-bg-card);
+  border: 1px solid var(--ls-edge-manual);
+  border-radius: var(--ls-radius);
+  padding: 8px 20px;
+  font-size: 13px;
+  color: var(--ls-text-primary);
+  z-index: 10;
+  white-space: nowrap;
+}

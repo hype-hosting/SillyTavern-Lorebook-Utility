@@ -16,6 +16,13 @@ import { getLayoutConfig, LayoutName } from './layouts';
 let cy: any = null;
 let currentBookName: string = '';
 
+// Node-select handler reference (for connect mode to disable/enable)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let nodeSelectHandler: ((evt: any) => void) | null = null;
+
+// Tooltip state
+let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Initialize the Cytoscape graph in the given container.
  */
@@ -63,6 +70,9 @@ export function initGraph(
     selectionType: 'single',
   });
 
+  // Prevent browser context menu on the graph container
+  container.addEventListener('contextmenu', (e) => e.preventDefault());
+
   // Restore saved positions if available
   restorePositions(bookName);
 
@@ -73,6 +83,14 @@ export function initGraph(
   if (!settings.showEdgeLabels) {
     cy.edges().addClass('ls-no-label');
   }
+
+  // Ensure graph is properly sized after container is fully rendered
+  setTimeout(() => {
+    if (cy) {
+      cy.resize();
+      cy.fit(undefined, 50);
+    }
+  }, 100);
 
   return cy;
 }
@@ -86,6 +104,33 @@ export function getGraph(): any {
 }
 
 /**
+ * Resize the graph to fit its container. Call after layout changes (sidebar open/close).
+ */
+export function resizeGraph(): void {
+  if (cy) {
+    cy.resize();
+  }
+}
+
+/**
+ * Temporarily disable node selection (for connect mode).
+ */
+export function disableNodeSelect(): void {
+  if (cy && nodeSelectHandler) {
+    cy.off('tap', 'node', nodeSelectHandler);
+  }
+}
+
+/**
+ * Re-enable node selection (when exiting connect mode).
+ */
+export function enableNodeSelect(): void {
+  if (cy && nodeSelectHandler) {
+    cy.on('tap', 'node', nodeSelectHandler);
+  }
+}
+
+/**
  * Destroy the graph instance and save positions.
  */
 export function destroyGraph(): void {
@@ -94,6 +139,7 @@ export function destroyGraph(): void {
     cy.destroy();
     cy = null;
   }
+  hideTooltip();
 }
 
 /**
@@ -136,6 +182,7 @@ export function refreshGraph(
       existing.data('disabled', entry.disable);
       existing.data('constant', entry.constant);
       existing.data('keys', entry.key);
+      existing.data('content', entry.content);
       existing.data('contentPreview', entry.content.substring(0, 100));
     } else {
       // Add new node
@@ -222,7 +269,6 @@ export function applySearchHighlight(matchingIds: Set<string>): void {
   cy.startBatch();
 
   if (matchingIds.size === 0) {
-    // Clear all search classes
     cy.elements().removeClass('ls-highlighted ls-dimmed');
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -271,6 +317,25 @@ export function toggleManualEdges(visible: boolean): void {
 export function toggleEdgeLabels(visible: boolean): void {
   if (!cy) return;
   cy.edges().toggleClass('ls-no-label', !visible);
+}
+
+/**
+ * Get the currently selected node's UID, or null.
+ */
+export function getSelectedNodeUid(): number | null {
+  if (!cy) return null;
+  const selected = cy.$(':selected');
+  if (selected.length > 0 && selected[0].isNode()) {
+    return parseInt(selected[0].id());
+  }
+  return null;
+}
+
+/**
+ * Get the current book name from the graph context.
+ */
+export function getGraphBookName(): string {
+  return currentBookName;
 }
 
 // --- Internal helpers ---
@@ -363,40 +428,116 @@ function applyEdgeVisibility(): void {
   toggleManualEdges(settings.showManualLinks);
 }
 
+// --- Tooltip helpers ---
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function showTooltip(nodeData: Record<string, any>, renderedPos: { x: number; y: number }): void {
+  const tooltip = document.getElementById('ls-tooltip');
+  if (!tooltip) return;
+
+  const badges: string[] = [];
+  if (nodeData.constant) badges.push('<span class="ls-tooltip-badge ls-tooltip-badge-constant">Constant</span>');
+  if (nodeData.disabled) badges.push('<span class="ls-tooltip-badge ls-tooltip-badge-disabled">Disabled</span>');
+  if (nodeData.selective) badges.push('<span class="ls-tooltip-badge ls-tooltip-badge-selective">Selective</span>');
+
+  const keys = (nodeData.keys || []) as string[];
+  const keysPreview = keys.length > 0
+    ? `<div class="ls-tooltip-keys"><strong>Keys:</strong> ${escapeHtml(keys.slice(0, 5).join(', '))}${keys.length > 5 ? ` +${keys.length - 5}` : ''}</div>`
+    : '';
+
+  const content = (nodeData.content || '') as string;
+  const contentPreview = content.length > 0
+    ? `<div class="ls-tooltip-content">${escapeHtml(content.substring(0, 200))}${content.length > 200 ? '...' : ''}</div>`
+    : '';
+
+  const connCount = nodeData.connectionCount as number || 0;
+
+  tooltip.innerHTML = `
+    <div class="ls-tooltip-name">${escapeHtml(nodeData.comment || 'Unnamed Entry')}</div>
+    ${badges.length > 0 ? `<div class="ls-tooltip-badges">${badges.join('')}</div>` : ''}
+    ${keysPreview}
+    ${contentPreview}
+    <div class="ls-tooltip-meta">${connCount} connection${connCount !== 1 ? 's' : ''}</div>
+  `;
+
+  const container = document.getElementById('ls-graph-container');
+  if (!container) return;
+  const containerRect = container.getBoundingClientRect();
+
+  let left = renderedPos.x + containerRect.left + 15;
+  let top = renderedPos.y + containerRect.top - 10;
+
+  // Keep tooltip within viewport
+  const tooltipWidth = 320;
+  if (left + tooltipWidth > window.innerWidth) {
+    left = renderedPos.x + containerRect.left - tooltipWidth - 15;
+  }
+  if (top < 0) top = 10;
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  tooltip.classList.remove('ls-tooltip-hidden');
+}
+
+function hideTooltip(): void {
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer);
+    tooltipTimer = null;
+  }
+  const tooltip = document.getElementById('ls-tooltip');
+  tooltip?.classList.add('ls-tooltip-hidden');
+}
+
+function escapeHtml(str: string): string {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// --- Event setup ---
+
 function setupEvents(): void {
   if (!cy) return;
 
-  // Node tap -> select and emit
+  // Node tap -> select and emit (stored as named handler for connect mode toggle)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.on('tap', 'node', (evt: any) => {
+  nodeSelectHandler = (evt: any) => {
     const node = evt.target;
+    hideTooltip();
     EventBus.emit(STUDIO_EVENTS.NODE_SELECTED, {
       uid: parseInt(node.id()),
       bookName: currentBookName,
       nodeData: node.data(),
     });
-  });
+  };
+  cy.on('tap', 'node', nodeSelectHandler);
 
   // Tap on background -> deselect
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cy.on('tap', (evt: any) => {
     if (evt.target === cy) {
+      hideTooltip();
       EventBus.emit(STUDIO_EVENTS.NODE_DESELECTED);
     }
   });
 
-  // Mouse hover effects
+  // Mouse hover effects + tooltip
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cy.on('mouseover', 'node', (evt: any) => {
     evt.target.addClass('ls-hover');
-    // Also highlight connected edges
     evt.target.connectedEdges().addClass('ls-hover');
+    // Show tooltip after brief delay
+    const nodeData = evt.target.data();
+    const renderedPos = evt.target.renderedPosition();
+    if (tooltipTimer) clearTimeout(tooltipTimer);
+    tooltipTimer = setTimeout(() => showTooltip(nodeData, renderedPos), 150);
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cy.on('mouseout', 'node', (evt: any) => {
     evt.target.removeClass('ls-hover');
     evt.target.connectedEdges().removeClass('ls-hover');
+    hideTooltip();
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -414,6 +555,7 @@ function setupEvents(): void {
   cy.on('cxttap', 'node', (evt: any) => {
     const node = evt.target;
     const pos = evt.renderedPosition || evt.position;
+    hideTooltip();
     EventBus.emit('ls:context-menu', {
       uid: parseInt(node.id()),
       bookName: currentBookName,
@@ -441,7 +583,6 @@ function savePositions(bookName: string): void {
   });
 
   settings.savedPositions[bookName] = positions;
-  // Don't call saveSettings here to avoid excessive saves during drag
 }
 
 function restorePositions(bookName: string): void {
@@ -461,7 +602,6 @@ function restorePositions(bookName: string): void {
     }
   });
 
-  // If we restored positions, don't run the layout
   if (hasPositions) {
     cy.fit(undefined, 50);
   }
