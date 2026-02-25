@@ -62,9 +62,9 @@ export function initGraph(
     container,
     elements: [...nodes, ...edges],
     style: stylesheet,
-    layout: getLayoutConfig(settings.defaultLayout as LayoutName, nodes.length) as cytoscape.LayoutOptions,
-    minZoom: 0.1,
-    maxZoom: 3,
+    layout: { name: 'preset' }, // We'll run layout manually below
+    minZoom: 0.05,
+    maxZoom: 4,
     wheelSensitivity: 0.3,
     boxSelectionEnabled: false,
     selectionType: 'single',
@@ -74,7 +74,7 @@ export function initGraph(
   container.addEventListener('contextmenu', (e) => e.preventDefault());
 
   // Restore saved positions if available
-  restorePositions(bookName);
+  const hadPositions = restorePositions(bookName);
 
   // Wire up events
   setupEvents();
@@ -84,13 +84,24 @@ export function initGraph(
     cy.edges().addClass('ls-no-label');
   }
 
+  // Run layout if no saved positions
+  if (!hadPositions) {
+    const layoutConfig = getLayoutConfig(settings.defaultLayout as LayoutName, nodes.length);
+    layoutConfig.stop = () => {
+      spreadOrphanNodes();
+      if (cy) cy.fit(undefined, 50);
+    };
+    const layout = cy.layout(layoutConfig as cytoscape.LayoutOptions);
+    layout.run();
+  }
+
   // Ensure graph is properly sized after container is fully rendered
   setTimeout(() => {
     if (cy) {
       cy.resize();
       cy.fit(undefined, 50);
     }
-  }, 100);
+  }, 200);
 
   return cy;
 }
@@ -168,19 +179,24 @@ export function refreshGraph(
     }
   }
 
+  // Remember selected node to restore after refresh
+  const selectedId = cy.$(':selected').nonempty() ? cy.$(':selected')[0].id() : null;
+
   // Add or update nodes
   for (const entry of entries) {
     const id = String(entry.uid);
     const existing = cy.getElementById(id);
 
     if (existing.length > 0) {
-      // Update existing node data
+      // Update all node data fields
       existing.data(
         'label',
         buildNodeLabel(entry.comment, entry.key, settings.showKeywordsOnNodes),
       );
+      existing.data('comment', entry.comment);
       existing.data('disabled', entry.disable);
       existing.data('constant', entry.constant);
+      existing.data('selective', entry.selective);
       existing.data('keys', entry.key);
       existing.data('content', entry.content);
       existing.data('contentPreview', entry.content.substring(0, 100));
@@ -203,6 +219,14 @@ export function refreshGraph(
 
   cy.endBatch();
 
+  // Restore selection
+  if (selectedId) {
+    const node = cy.getElementById(selectedId);
+    if (node.length > 0) {
+      node.select();
+    }
+  }
+
   // Apply visibility settings
   applyEdgeVisibility();
 
@@ -217,6 +241,10 @@ export function refreshGraph(
 export function runLayout(layoutName: LayoutName): void {
   if (!cy) return;
   const config = getLayoutConfig(layoutName, cy.nodes().length);
+  config.stop = () => {
+    spreadOrphanNodes();
+    if (cy) cy.fit(undefined, 50);
+  };
   cy.layout(config as cytoscape.LayoutOptions).run();
   EventBus.emit(STUDIO_EVENTS.LAYOUT_CHANGED, layoutName);
 }
@@ -585,12 +613,12 @@ function savePositions(bookName: string): void {
   settings.savedPositions[bookName] = positions;
 }
 
-function restorePositions(bookName: string): void {
-  if (!cy || !bookName) return;
+function restorePositions(bookName: string): boolean {
+  if (!cy || !bookName) return false;
 
   const settings = getSettings();
   const positions = settings.savedPositions[bookName];
-  if (!positions) return;
+  if (!positions) return false;
 
   let hasPositions = false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -605,4 +633,44 @@ function restorePositions(bookName: string): void {
   if (hasPositions) {
     cy.fit(undefined, 50);
   }
+  return hasPositions;
+}
+
+/**
+ * After force-directed layout, spread orphan nodes into a neat grid below the main cluster.
+ */
+function spreadOrphanNodes(): void {
+  if (!cy) return;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orphans = cy.nodes().filter((n: any) => n.degree(false) === 0);
+  if (orphans.length === 0) return;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const connected = cy.nodes().filter((n: any) => n.degree(false) > 0);
+
+  // Find the bounding box of connected nodes
+  let maxY = 0;
+  let centerX = 0;
+  if (connected.length > 0) {
+    const bb = connected.boundingBox();
+    maxY = bb.y2;
+    centerX = (bb.x1 + bb.x2) / 2;
+  }
+
+  // Arrange orphans in a grid below the connected cluster
+  const cols = Math.max(1, Math.ceil(Math.sqrt(orphans.length * 1.5)));
+  const nodeWidth = 200;
+  const nodeHeight = 80;
+  const gridStartY = maxY + 150;
+  const gridStartX = centerX - (cols * nodeWidth) / 2;
+
+  orphans.forEach((node: unknown, i: number) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    (node as { position: (pos: { x: number; y: number }) => void }).position({
+      x: gridStartX + col * nodeWidth,
+      y: gridStartY + row * nodeHeight,
+    });
+  });
 }

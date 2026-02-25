@@ -7,111 +7,125 @@ type StyleDef = { selector: string; style: Record<string, any> };
 
 export function getNodeStylesheet(): StyleDef[] {
   return [
+    // Base node: soft purple-blue with rounded feel
     {
       selector: 'node',
       style: {
         'shape': 'roundrectangle',
-        'width': 180,
-        'height': 55,
-        'background-color': '#4a9eff',
-        'border-width': 2,
-        'border-color': '#3a8eef',
+        'width': 170,
+        'height': 50,
+        'background-color': '#2d2b4e',
+        'border-width': 1.5,
+        'border-color': '#5a52a0',
+        'border-opacity': 0.7,
         'label': 'data(label)',
         'text-valign': 'center',
         'text-halign': 'center',
         'text-wrap': 'ellipsis',
-        'text-max-width': '160px',
+        'text-max-width': '150px',
         'font-size': 11,
-        'font-weight': 'bold',
-        'color': '#ffffff',
+        'color': '#d0ccdf',
         'text-outline-width': 0,
         'padding': 8,
+        'overlay-opacity': 0,
       },
     },
-    // Disabled entries
+    // Disabled entries — faded and dashed
     {
       selector: 'node[?disabled]',
       style: {
-        'background-color': '#6b7280',
-        'border-color': '#4b5563',
+        'background-color': '#25232e',
+        'border-color': '#454050',
         'border-style': 'dashed',
-        'color': '#d1d5db',
-        'opacity': 0.7,
+        'color': '#7a7588',
+        'opacity': 0.6,
       },
     },
-    // Constant entries
+    // Constant entries — green accent
     {
       selector: 'node[?constant]',
       style: {
-        'border-color': '#10b981',
-        'border-width': 3,
-        'background-color': '#2d4a5e',
+        'border-color': '#4ade80',
+        'border-width': 2,
+        'border-opacity': 0.8,
+        'background-color': '#1f2e38',
       },
     },
-    // Selected node
+    // Selected node — warm gold glow
     {
       selector: 'node:selected',
       style: {
-        'background-color': '#f59e0b',
-        'border-color': '#d97706',
-        'border-width': 3,
-        'color': '#1a1a2e',
+        'background-color': '#3d3520',
+        'border-color': '#fbbf24',
+        'border-width': 2.5,
+        'border-opacity': 1,
+        'color': '#fde68a',
+        'overlay-color': '#fbbf24',
+        'overlay-padding': 6,
+        'overlay-opacity': 0.08,
       },
     },
-    // Orphan nodes (no connections) - red dashed border + subtle tint
+    // Orphan nodes — soft amber hint (not harsh red)
     {
       selector: 'node[?orphan]',
       style: {
-        'border-color': '#ef4444',
+        'border-color': '#b87333',
         'border-style': 'dashed',
-        'border-width': 2,
-        'background-color': '#3a2020',
+        'border-width': 1.5,
+        'border-opacity': 0.5,
+        'background-color': '#2a2220',
       },
     },
-    // Nodes with many connections - slightly larger
+    // Nodes with many connections — slightly larger
     {
       selector: 'node[connectionCount > 5]',
       style: {
-        'width': 210,
-        'height': 65,
+        'width': 195,
+        'height': 58,
         'font-size': 12,
+        'border-width': 2,
       },
     },
-    // Highlighted (search match)
+    // Highlighted (search match) — vivid purple
     {
       selector: 'node.ls-highlighted',
       style: {
-        'background-color': '#8b5cf6',
-        'border-color': '#7c3aed',
-        'border-width': 3,
+        'background-color': '#352b5e',
+        'border-color': '#a78bfa',
+        'border-width': 2.5,
+        'border-opacity': 1,
+        'color': '#e0d7ff',
       },
     },
     // Dimmed (search non-match)
     {
       selector: 'node.ls-dimmed',
       style: {
-        'opacity': 0.2,
+        'opacity': 0.15,
       },
     },
-    // Hover
+    // Hover — subtle lift
     {
       selector: 'node.ls-hover',
       style: {
-        'border-width': 3,
-        'border-color': '#ffffff',
+        'border-width': 2,
+        'border-color': '#8b80cc',
+        'border-opacity': 1,
+        'overlay-color': '#7c6bde',
+        'overlay-padding': 4,
+        'overlay-opacity': 0.06,
       },
     },
     // Connect mode: source node glow
     {
       selector: 'node.ls-connect-source',
       style: {
-        'border-width': 4,
-        'border-color': '#f472b6',
-        'shadow-blur': 15,
-        'shadow-color': '#f472b6',
-        'shadow-opacity': 0.6,
-        'shadow-offset-x': 0,
-        'shadow-offset-y': 0,
+        'border-width': 3,
+        'border-color': '#d4a0c0',
+        'border-opacity': 1,
+        'overlay-color': '#d4a0c0',
+        'overlay-padding': 8,
+        'overlay-opacity': 0.2,
       },
     },
   ];

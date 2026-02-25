@@ -7,52 +7,54 @@ type StyleDef = { selector: string; style: Record<string, any> };
 
 export function getEdgeStylesheet(): StyleDef[] {
   return [
-    // Base edge style
+    // Base edge — thin, curved, subtle
     {
       selector: 'edge',
       style: {
-        'curve-style': 'bezier',
+        'curve-style': 'unbundled-bezier',
+        'control-point-distances': [40],
+        'control-point-weights': [0.5],
         'target-arrow-shape': 'triangle',
-        'target-arrow-color': '#60a5fa',
-        'line-color': '#60a5fa',
-        'width': 2,
-        'opacity': 0.8,
-        'arrow-scale': 1.2,
+        'target-arrow-color': '#5a72a0',
+        'line-color': '#5a72a0',
+        'width': 1.5,
+        'opacity': 0.5,
+        'arrow-scale': 0.9,
       },
     },
-    // Auto-detected recursion edges
+    // Auto-detected recursion edges — blue-ish
     {
       selector: 'edge[type = "auto"]',
       style: {
         'line-style': 'solid',
-        'line-color': '#60a5fa',
-        'target-arrow-color': '#60a5fa',
+        'line-color': '#5a72a0',
+        'target-arrow-color': '#5a72a0',
         'label': 'data(triggerKey)',
-        'font-size': 9,
-        'color': '#93c5fd',
+        'font-size': 8,
+        'color': '#7a8fb5',
         'text-rotation': 'autorotate',
-        'text-background-color': '#1a1a2e',
-        'text-background-opacity': 0.8,
+        'text-background-color': '#13111c',
+        'text-background-opacity': 0.85,
         'text-background-padding': '2px',
-        'text-margin-y': -10,
+        'text-margin-y': -8,
       },
     },
-    // Manual link edges
+    // Manual link edges — warm pink/mauve
     {
       selector: 'edge[type = "manual"]',
       style: {
         'line-style': 'dashed',
-        'line-color': '#f472b6',
-        'target-arrow-color': '#f472b6',
-        'line-dash-pattern': [6, 3],
+        'line-color': '#b07898',
+        'target-arrow-color': '#b07898',
+        'line-dash-pattern': [8, 4],
         'label': 'data(triggerKey)',
-        'font-size': 9,
-        'color': '#f9a8d4',
+        'font-size': 8,
+        'color': '#c8a0b8',
         'text-rotation': 'autorotate',
-        'text-background-color': '#1a1a2e',
-        'text-background-opacity': 0.8,
+        'text-background-color': '#13111c',
+        'text-background-opacity': 0.85,
         'text-background-padding': '2px',
-        'text-margin-y': -10,
+        'text-margin-y': -8,
       },
     },
     // Secondary key edges
@@ -60,32 +62,32 @@ export function getEdgeStylesheet(): StyleDef[] {
       selector: 'edge[keyType = "secondary"]',
       style: {
         'line-style': 'dotted',
-        'opacity': 0.6,
+        'opacity': 0.35,
       },
     },
-    // Selected edge
+    // Selected edge — warm gold
     {
       selector: 'edge:selected',
       style: {
-        'width': 3,
-        'opacity': 1,
-        'line-color': '#f59e0b',
-        'target-arrow-color': '#f59e0b',
+        'width': 2.5,
+        'opacity': 0.9,
+        'line-color': '#fbbf24',
+        'target-arrow-color': '#fbbf24',
       },
     },
     // Hover state
     {
       selector: 'edge.ls-hover',
       style: {
-        'width': 3,
-        'opacity': 1,
+        'width': 2.5,
+        'opacity': 0.85,
       },
     },
     // Dimmed (search non-match)
     {
       selector: 'edge.ls-dimmed',
       style: {
-        'opacity': 0.1,
+        'opacity': 0.05,
       },
     },
     // Hidden (toggle off)
