@@ -13,7 +13,7 @@
 import './style.css';
 import { getSettings, getDefaultSettings, getModuleName } from './utils/settings';
 import { onSTEvent, removeAllHandlers } from './utils/events';
-import { clearCache } from './data/lorebookData';
+import { clearCache, isSelfSaving } from './data/lorebookData';
 import { clearRecursionCache } from './data/recursionDetector';
 import { initDrawer, injectTriggerButton, openDrawer, isDrawerOpen } from './ui/drawer';
 
@@ -79,6 +79,9 @@ function registerSTEvents(): void {
     // Listen for world info updates to refresh graph if drawer is open
     if (eventTypes.WORLDINFO_UPDATED) {
       onSTEvent(eventTypes.WORLDINFO_UPDATED, () => {
+        // Skip if this event was triggered by our own save + reloadWorldInfoEditor call
+        if (isSelfSaving()) return;
+
         const settings = getSettings();
         if (settings.autoRefresh && isDrawerOpen()) {
           clearCache();

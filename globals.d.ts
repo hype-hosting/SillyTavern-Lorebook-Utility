@@ -16,8 +16,8 @@ declare global {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     loadWorldInfo(name: string): Promise<any>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    saveWorldInfo(name: string, data: any): Promise<void>;
-    reloadWorldInfoEditor(): void;
+    saveWorldInfo(name: string, data: any, immediately?: boolean): Promise<void>;
+    reloadWorldInfoEditor(file?: string, loadIfNotSelected?: boolean): void;
     updateWorldInfoList(): void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     renderExtensionTemplateAsync(extensionName: string, templateId: string, data?: Record<string, any>): Promise<string>;

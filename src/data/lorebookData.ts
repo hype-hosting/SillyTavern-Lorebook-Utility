@@ -51,6 +51,8 @@ let loadedData: any = null;
 let loadedBookName: string | null = null;
 /** Normalized entries cache */
 let cachedEntries: LorebookEntry[] = [];
+/** Guard flag: true while our own save is in progress (prevents feedback loops) */
+let selfSaving = false;
 
 /**
  * Get all available world info book names from SillyTavern's DOM.
@@ -352,6 +354,15 @@ export function clearCache(): void {
   cachedEntries = [];
 }
 
+/**
+ * Check if the extension is currently saving data.
+ * Used by event handlers to avoid clearing our cache when we triggered
+ * the WORLDINFO_UPDATED event ourselves via reloadWorldInfoEditor().
+ */
+export function isSelfSaving(): boolean {
+  return selfSaving;
+}
+
 // --- Internal helpers ---
 
 /**
@@ -388,13 +399,31 @@ function normalizeEntry(entry: WorldInfoEntry): LorebookEntry {
 
 /**
  * Save the current loaded data back to SillyTavern.
+ * Uses `immediately = true` to bypass ST's internal debounce, ensuring
+ * data is persisted right away. After saving, refreshes ST's native
+ * World Info editor so changes are visible outside Lorebook Studio.
  */
 async function saveBookData(bookName: string): Promise<void> {
   try {
     if (!loadedData) return;
+    selfSaving = true;
     const ctx = SillyTavern.getContext();
-    await ctx.saveWorldInfo(bookName, loadedData);
+    // Pass immediately=true to bypass ST's debounced save (~1s delay)
+    await ctx.saveWorldInfo(bookName, loadedData, true);
+
+    // Refresh ST's native WI editor so changes appear in the regular view
+    try {
+      ctx.reloadWorldInfoEditor(bookName, true);
+    } catch {
+      // Non-critical — editor might not be open
+    }
+
+    console.log(`[Lorebook Studio] Saved "${bookName}" successfully`);
   } catch (e) {
     console.error('[Lorebook Studio] Error saving world info:', e);
+  } finally {
+    // Keep flag active briefly to outlive any synchronous event handlers
+    // triggered by reloadWorldInfoEditor
+    setTimeout(() => { selfSaving = false; }, 200);
   }
 }
