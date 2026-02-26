@@ -88,4 +88,6 @@ export const STUDIO_EVENTS = {
   DRAWER_CLOSED: 'ls:drawer-closed',
   CONNECT_MODE_START: 'ls:connect-mode-start',
   CONNECT_MODE_END: 'ls:connect-mode-end',
+  STUDIO_META_UPDATED: 'ls:studio-meta-updated',
+  CATEGORIES_CHANGED: 'ls:categories-changed',
 } as const;

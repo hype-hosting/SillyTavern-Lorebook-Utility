@@ -9,6 +9,7 @@ import ForceGraph3D from '3d-force-graph';
 import SpriteText from 'three-spritetext';
 import { LorebookEntry } from '../data/lorebookData';
 import { RecursionEdge } from '../data/recursionDetector';
+import { getEntryMeta, getCategoryById } from '../data/studioData';
 import { ManualLinkData, getSettings, updateSettings } from '../utils/settings';
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import {
@@ -456,6 +457,14 @@ function buildNode(
       (l) => l.sourceUid === uidStr || l.targetUid === uidStr,
     ).length;
 
+  // Look up studio metadata
+  const meta = getEntryMeta(currentBookName, uidStr);
+  let categoryColor: string | null = null;
+  if (meta.categoryId) {
+    const cat = getCategoryById(currentBookName, meta.categoryId);
+    if (cat) categoryColor = cat.color;
+  }
+
   return {
     id: uidStr,
     uid: entry.uid,
@@ -474,6 +483,11 @@ function buildNode(
     order: entry.order,
     group: entry.group,
     bookName: currentBookName,
+    categoryColor,
+    colorOverride: meta.colorOverride,
+    status: meta.status,
+    pinned: meta.pinned,
+    hasNotes: meta.notes.length > 0,
   };
 }
 

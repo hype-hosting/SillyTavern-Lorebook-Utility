@@ -14,6 +14,18 @@
           <button id="ls-search-clear" class="ls-btn ls-btn-icon" title="Clear search">&times;</button>
         </div>
         <div class="ls-toolbar-filters">
+          <select id="ls-filter-category" class="ls-select ls-select-sm" title="Filter by category">
+            <option value="">All Categories</option>
+            <option value="__uncategorized__">Uncategorized</option>
+          </select>
+          <select id="ls-filter-status" class="ls-select ls-select-sm" title="Filter by status">
+            <option value="">All Statuses</option>
+            <option value="draft">Draft</option>
+            <option value="in-progress">In Progress</option>
+            <option value="review">Review</option>
+            <option value="complete">Complete</option>
+          </select>
+          <button id="ls-filter-pinned" class="ls-btn ls-btn-sm" title="Show pinned entries">Pinned</button>
           <button id="ls-filter-orphans" class="ls-btn ls-btn-sm" title="Show orphan entries">Orphans</button>
           <button id="ls-filter-disabled" class="ls-btn ls-btn-sm" title="Show disabled entries">Disabled</button>
         </div>
@@ -143,15 +155,60 @@
             </label>
           </div>
 
-          <!-- Manual link creation -->
-          <div class="ls-field ls-manual-links-section">
-            <label class="ls-label">Manual Links</label>
-            <div id="ls-manual-links-list" class="ls-manual-links-list"></div>
+          <!-- Studio Metadata -->
+          <div class="ls-studio-section">
+            <div class="ls-studio-divider">
+              <span class="ls-studio-divider-text">Studio</span>
+            </div>
+            <div class="ls-field">
+              <label class="ls-label" for="ls-entry-category">Category</label>
+              <div class="ls-field-row">
+                <select id="ls-entry-category" class="ls-select ls-flex-grow">
+                  <option value="">-- None --</option>
+                </select>
+                <button id="ls-btn-manage-categories" class="ls-btn ls-btn-sm" title="Manage categories">Manage</button>
+              </div>
+            </div>
+            <div class="ls-field">
+              <label class="ls-label">Tags</label>
+              <div id="ls-tag-container" class="ls-tag-container"></div>
+              <div class="ls-tag-input-wrapper">
+                <input type="text" id="ls-tag-input" class="ls-input" placeholder="Add tag..." />
+                <div id="ls-tag-autocomplete" class="ls-tag-autocomplete ls-hidden"></div>
+              </div>
+            </div>
             <div class="ls-field-row">
-              <select id="ls-link-target-select" class="ls-select ls-flex-grow">
-                <option value="">-- Connect to... --</option>
-              </select>
-              <button id="ls-btn-add-link" class="ls-btn ls-btn-sm ls-btn-primary">Link</button>
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-status">Status</label>
+                <select id="ls-entry-status" class="ls-select">
+                  <option value="">-- None --</option>
+                  <option value="draft">Draft</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="review">Review</option>
+                  <option value="complete">Complete</option>
+                </select>
+              </div>
+              <div class="ls-field ls-field-half">
+                <label class="ls-label">&nbsp;</label>
+                <label class="ls-toggle ls-pin-toggle">
+                  <input type="checkbox" id="ls-entry-pinned" />
+                  <span>&#9733; Pinned</span>
+                </label>
+              </div>
+            </div>
+            <div class="ls-field">
+              <label class="ls-label" for="ls-entry-notes">Studio Notes</label>
+              <textarea id="ls-entry-notes" class="ls-textarea" rows="3" placeholder="Private notes..."></textarea>
+            </div>
+            <div class="ls-field">
+              <label class="ls-label">Color Override</label>
+              <div class="ls-color-override-row">
+                <input type="color" id="ls-entry-color-override" class="ls-color-input" value="#5a52a0" />
+                <label class="ls-toggle">
+                  <input type="checkbox" id="ls-entry-color-enabled" />
+                  <span>Enable</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -171,6 +228,22 @@
         <button id="ls-stats-close" class="ls-btn ls-btn-icon">&times;</button>
       </div>
       <div id="ls-stats-body" class="ls-stats-body"></div>
+    </div>
+
+    <!-- Category Manager (hidden by default) -->
+    <div id="ls-category-panel" class="ls-stats-panel ls-stats-hidden">
+      <div class="ls-stats-header">
+        <h3>Manage Categories</h3>
+        <button id="ls-category-close" class="ls-btn ls-btn-icon">&times;</button>
+      </div>
+      <div id="ls-category-body" class="ls-stats-body">
+        <div id="ls-category-list"></div>
+        <div class="ls-category-add-row">
+          <input type="color" id="ls-category-new-color" class="ls-color-input" value="#e06c75" />
+          <input type="text" id="ls-category-new-name" class="ls-input ls-flex-grow" placeholder="New category name..." />
+          <button id="ls-btn-add-category" class="ls-btn ls-btn-sm ls-btn-primary">Add</button>
+        </div>
+      </div>
     </div>
 
     <!-- Tooltip (positioned via JS, hidden by default) -->

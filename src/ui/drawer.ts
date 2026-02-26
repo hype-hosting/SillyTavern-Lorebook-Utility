@@ -14,6 +14,7 @@ import { initToolbarEvents } from './toolbar';
 import { initSidebar, openSidebar, closeSidebar } from './sidebar';
 import { initStatsPanel } from './statsPanel';
 import { initContextMenu } from './contextMenu';
+import { initCategoryManager } from './categoryManager';
 import { initConnectMode, exitConnectMode, isConnectModeActive } from './connectMode';
 import { getSelectedNodeUid } from '../graph/graphManager';
 import { deleteEntryById, duplicateEntryById } from '../features/entryCrud';
@@ -142,6 +143,7 @@ export function initDrawer(): void {
   initSidebar();
   initStatsPanel();
   initContextMenu();
+  initCategoryManager();
   initConnectMode();
 
   // Listen for internal events that require graph refresh
@@ -153,6 +155,8 @@ export function initDrawer(): void {
   });
   EventBus.on(STUDIO_EVENTS.MANUAL_LINK_ADDED, () => refreshCurrentGraph());
   EventBus.on(STUDIO_EVENTS.MANUAL_LINK_REMOVED, () => refreshCurrentGraph());
+  EventBus.on(STUDIO_EVENTS.STUDIO_META_UPDATED, () => refreshCurrentGraph());
+  EventBus.on(STUDIO_EVENTS.CATEGORIES_CHANGED, () => refreshCurrentGraph());
 }
 
 /**

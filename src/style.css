@@ -389,34 +389,207 @@
   flex-wrap: wrap;
 }
 
-/* --- Manual Links List --- */
-.ls-manual-links-list {
-  margin-bottom: 8px;
-}
-
-.ls-manual-link-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 8px;
-  background: var(--ls-bg-card);
-  border-radius: var(--ls-radius-sm);
-  margin-bottom: 4px;
-  font-size: 12px;
-  color: var(--ls-text-primary);
-}
-
-.ls-manual-link-item .ls-link-remove {
-  background: none;
-  border: none;
-  color: var(--ls-danger);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 0 4px;
+/* --- Utility --- */
+.ls-hidden {
+  display: none !important;
 }
 
 .ls-flex-grow {
   flex: 1;
+}
+
+/* --- Toolbar Filter Dropdowns --- */
+.ls-select-sm {
+  padding: 3px 6px;
+  font-size: 11px;
+  min-width: 0;
+  max-width: 140px;
+  height: 28px;
+}
+
+/* --- Studio Metadata Section --- */
+.ls-studio-section {
+  margin-top: 8px;
+}
+
+.ls-studio-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 10px;
+}
+
+.ls-studio-divider::before,
+.ls-studio-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ls-border-light);
+}
+
+.ls-studio-divider-text {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ls-accent);
+}
+
+/* --- Tags --- */
+.ls-tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+  min-height: 4px;
+}
+
+.ls-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  background: var(--ls-accent-soft);
+  border: 1px solid var(--ls-accent);
+  border-radius: 12px;
+  font-size: 11px;
+  color: var(--ls-text-primary);
+  white-space: nowrap;
+}
+
+.ls-tag-pill-sm {
+  padding: 1px 6px;
+  font-size: 10px;
+  border-radius: 10px;
+}
+
+.ls-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: none;
+  border: none;
+  color: var(--ls-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+
+.ls-tag-remove:hover {
+  color: var(--ls-danger);
+  background: rgba(248, 113, 113, 0.15);
+}
+
+.ls-tag-input-wrapper {
+  position: relative;
+}
+
+.ls-tag-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--ls-bg-tertiary);
+  border: 1px solid var(--ls-border-light);
+  border-radius: var(--ls-radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.ls-tag-autocomplete-item {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--ls-text-primary);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.ls-tag-autocomplete-item:hover {
+  background: var(--ls-accent-soft);
+  color: #fff;
+}
+
+/* --- Category Manager --- */
+.ls-category-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--ls-border);
+}
+
+.ls-category-item:last-child {
+  border-bottom: none;
+}
+
+.ls-category-item .ls-category-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.ls-category-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ls-border-light);
+}
+
+/* --- Color Override --- */
+.ls-color-input {
+  width: 32px;
+  height: 28px;
+  padding: 1px;
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-sm);
+  background: var(--ls-bg-input);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ls-color-input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.ls-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+.ls-color-override-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Pin Toggle --- */
+.ls-pin-toggle {
+  padding: 5px 0;
+  color: var(--ls-warning);
+}
+
+.ls-pin-toggle input:checked + span {
+  color: var(--ls-warning);
+  font-weight: 600;
+}
+
+/* --- Stats Panel: category swatches --- */
+.ls-stat-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* --- Stats Panel --- */
@@ -478,6 +651,8 @@
 }
 
 .ls-stat-label {
+  display: flex;
+  align-items: center;
   color: var(--ls-text-secondary);
 }
 

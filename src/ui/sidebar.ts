@@ -4,22 +4,25 @@
 
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import { LorebookEntry, getEntries, updateEntry, deleteEntry, createEntry } from '../data/lorebookData';
-import { addManualLink, removeManualLink, getLinksForEntry } from '../data/manualLinks';
+import {
+  getEntryMeta, updateEntryMeta, getCategories, getAllTags,
+} from '../data/studioData';
+import { EntryMeta, EntryStatus } from '../utils/settings';
 import { focusNode, resizeGraph } from '../graph/graphManager';
 import { getCurrentBookName } from './drawer';
 
 let selectedEntry: LorebookEntry | null = null;
 let originalEntry: LorebookEntry | null = null;
+let currentTags: string[] = [];
 
 // Resize state
 const SIDEBAR_MIN_WIDTH = 280;
-const SIDEBAR_MAX_WIDTH_RATIO = 0.6; // max 60% of the drawer width
+const SIDEBAR_MAX_WIDTH_RATIO = 0.6;
 
 /**
  * Initialize sidebar events.
  */
 export function initSidebar(): void {
-  // Listen for node selection from graph
   EventBus.on(STUDIO_EVENTS.NODE_SELECTED, (data: unknown) => {
     const { uid, bookName } = data as { uid: number; bookName: string };
     loadEntryIntoSidebar(uid, bookName);
@@ -30,28 +33,23 @@ export function initSidebar(): void {
     closeSidebar();
   });
 
-  // Sidebar close button
   document.getElementById('ls-sidebar-close')?.addEventListener('click', closeSidebar);
-
-  // Save button
   document.getElementById('ls-btn-save-entry')?.addEventListener('click', saveEntry);
-
-  // Revert button
   document.getElementById('ls-btn-revert-entry')?.addEventListener('click', revertEntry);
-
-  // Duplicate button
   document.getElementById('ls-btn-duplicate-entry')?.addEventListener('click', duplicateEntry);
-
-  // Delete button
   document.getElementById('ls-btn-delete-entry')?.addEventListener('click', deleteCurrentEntry);
 
-  // Add manual link button
-  document.getElementById('ls-btn-add-link')?.addEventListener('click', addLink);
-
-  // Sidebar resize handle
+  initTagInput();
   initResizeHandle();
 
-  // Listen for create entry requests from toolbar
+  // Refresh category dropdown when categories change
+  EventBus.on(STUDIO_EVENTS.CATEGORIES_CHANGED, () => {
+    const bookName = getCurrentBookName();
+    if (bookName && selectedEntry) {
+      populateCategoryDropdown(bookName);
+    }
+  });
+
   EventBus.on('ls:create-entry-request', async (data: unknown) => {
     const { bookName } = data as { bookName: string };
     if (!bookName) return;
@@ -71,7 +69,6 @@ export function initSidebar(): void {
 export function openSidebar(): void {
   const sidebar = document.getElementById('ls-sidebar');
   sidebar?.classList.remove('ls-sidebar-hidden');
-  // Resize graph after sidebar transition completes
   setTimeout(() => resizeGraph(), 350);
 }
 
@@ -83,7 +80,7 @@ export function closeSidebar(): void {
   sidebar?.classList.add('ls-sidebar-hidden');
   selectedEntry = null;
   originalEntry = null;
-  // Resize graph after sidebar transition completes
+  currentTags = [];
   setTimeout(() => resizeGraph(), 350);
 }
 
@@ -97,11 +94,9 @@ function loadEntryIntoSidebar(uid: number, bookName: string): void {
   selectedEntry = { ...entry };
   originalEntry = { ...entry };
 
-  // Update sidebar title
   const titleEl = document.getElementById('ls-sidebar-title');
   if (titleEl) titleEl.textContent = entry.comment || `Entry ${entry.uid}`;
 
-  // Populate form fields
   setInputValue('ls-entry-comment', entry.comment);
   setInputValue('ls-entry-keys', entry.key.join(', '));
   setInputValue('ls-entry-keysecondary', entry.keysecondary.join(', '));
@@ -117,11 +112,48 @@ function loadEntryIntoSidebar(uid: number, bookName: string): void {
   setCheckbox('ls-entry-exclude-recursion', entry.excludeRecursion);
   setCheckbox('ls-entry-prevent-recursion', entry.preventRecursion);
 
-  // Populate manual links list
-  populateManualLinks(uid, bookName);
+  populateStudioSection(uid, bookName);
+}
 
-  // Populate link target dropdown
-  populateLinkTargets(uid, bookName);
+function populateStudioSection(uid: number, bookName: string): void {
+  const meta = getEntryMeta(bookName, String(uid));
+
+  populateCategoryDropdown(bookName);
+  setSelectValue('ls-entry-category', meta.categoryId || '');
+
+  currentTags = [...meta.tags];
+  renderTags();
+
+  setSelectValue('ls-entry-status', meta.status || '');
+  setCheckbox('ls-entry-pinned', meta.pinned);
+  setTextareaValue('ls-entry-notes', meta.notes);
+
+  const colorEnabled = meta.colorOverride !== null;
+  setCheckbox('ls-entry-color-enabled', colorEnabled);
+  const colorInput = document.getElementById('ls-entry-color-override') as HTMLInputElement | null;
+  if (colorInput) {
+    colorInput.value = meta.colorOverride || '#5a52a0';
+    colorInput.disabled = !colorEnabled;
+  }
+}
+
+function populateCategoryDropdown(bookName: string): void {
+  const select = document.getElementById('ls-entry-category') as HTMLSelectElement | null;
+  if (!select) return;
+
+  const currentValue = select.value;
+  const categories = getCategories(bookName);
+
+  select.innerHTML = '<option value="">-- None --</option>';
+  for (const cat of categories) {
+    const option = document.createElement('option');
+    option.value = cat.id;
+    option.textContent = cat.name;
+    option.style.borderLeft = `4px solid ${cat.color}`;
+    select.appendChild(option);
+  }
+
+  select.value = currentValue;
 }
 
 function saveEntry(): void {
@@ -129,7 +161,6 @@ function saveEntry(): void {
   const bookName = getCurrentBookName();
   if (!bookName) return;
 
-  // Read form values
   const comment = getInputValue('ls-entry-comment');
   const keysStr = getInputValue('ls-entry-keys');
   const keysecondaryStr = getInputValue('ls-entry-keysecondary');
@@ -149,26 +180,17 @@ function saveEntry(): void {
     comment,
     key: keysStr.split(',').map((k) => k.trim()).filter(Boolean),
     keysecondary: keysecondaryStr.split(',').map((k) => k.trim()).filter(Boolean),
-    content,
-    position,
-    depth,
-    order,
-    probability,
-    group,
-    disable: !enabled,
-    constant,
-    selective,
-    excludeRecursion,
-    preventRecursion,
+    content, position, depth, order, probability, group,
+    disable: !enabled, constant, selective, excludeRecursion, preventRecursion,
   };
 
   const success = updateEntry(bookName, selectedEntry.uid, fields);
   if (success) {
-    // Update original for revert tracking
     originalEntry = { ...selectedEntry, ...fields };
     selectedEntry = { ...originalEntry };
 
-    // Show brief save confirmation via title flash
+    saveStudioMeta(bookName, selectedEntry.uid);
+
     const titleEl = document.getElementById('ls-sidebar-title');
     if (titleEl) {
       titleEl.textContent = 'Saved!';
@@ -177,6 +199,24 @@ function saveEntry(): void {
       }, 1000);
     }
   }
+}
+
+function saveStudioMeta(bookName: string, uid: number): void {
+  const categoryId = getSelectValue('ls-entry-category') || null;
+  const status = (getSelectValue('ls-entry-status') || null) as EntryStatus | null;
+  const pinned = getCheckbox('ls-entry-pinned');
+  const notes = getTextareaValue('ls-entry-notes');
+  const colorEnabled = getCheckbox('ls-entry-color-enabled');
+  const colorValue = (document.getElementById('ls-entry-color-override') as HTMLInputElement | null)?.value || '#5a52a0';
+
+  const meta: Partial<EntryMeta> = {
+    categoryId,
+    tags: [...currentTags],
+    notes, status, pinned,
+    colorOverride: colorEnabled ? colorValue : null,
+  };
+
+  updateEntryMeta(bookName, String(uid), meta);
 }
 
 function revertEntry(): void {
@@ -194,7 +234,6 @@ async function duplicateEntry(): Promise<void> {
   const newEntry = await createEntry(bookName);
   if (!newEntry) return;
 
-  // Copy fields from selected entry
   const fields: Partial<LorebookEntry> = {
     comment: (selectedEntry.comment || 'Entry') + ' (copy)',
     key: [...selectedEntry.key],
@@ -213,6 +252,11 @@ async function duplicateEntry(): Promise<void> {
   };
 
   updateEntry(bookName, newEntry.uid, fields);
+
+  // Copy studio metadata too
+  const meta = getEntryMeta(bookName, String(selectedEntry.uid));
+  updateEntryMeta(bookName, String(newEntry.uid), { ...meta });
+
   loadEntryIntoSidebar(newEntry.uid, bookName);
   focusNode(String(newEntry.uid));
 }
@@ -231,74 +275,94 @@ function deleteCurrentEntry(): void {
   closeSidebar();
 }
 
-function addLink(): void {
-  if (!selectedEntry) return;
-  const bookName = getCurrentBookName();
-  if (!bookName) return;
+// --- Tag input ---
 
-  const targetSelect = document.getElementById('ls-link-target-select') as HTMLSelectElement | null;
-  const targetUid = targetSelect?.value;
-  if (!targetUid) return;
+function initTagInput(): void {
+  const input = document.getElementById('ls-tag-input') as HTMLInputElement | null;
+  if (!input) return;
 
-  addManualLink(bookName, String(selectedEntry.uid), targetUid);
-  populateManualLinks(selectedEntry.uid, bookName);
+  input.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const tag = input.value.trim().toLowerCase();
+      if (tag && !currentTags.includes(tag)) {
+        currentTags.push(tag);
+        renderTags();
+      }
+      input.value = '';
+      hideAutocomplete();
+    }
+    if (e.key === 'Escape') {
+      hideAutocomplete();
+    }
+  });
 
-  // Reset dropdown
-  if (targetSelect) targetSelect.value = '';
+  input.addEventListener('input', () => {
+    const query = input.value.trim().toLowerCase();
+    if (query.length < 1) {
+      hideAutocomplete();
+      return;
+    }
+
+    const bookName = getCurrentBookName();
+    if (!bookName) return;
+
+    const allTags = getAllTags(bookName);
+    const suggestions = allTags
+      .filter((t) => t.includes(query) && !currentTags.includes(t))
+      .slice(0, 6);
+
+    if (suggestions.length === 0) {
+      hideAutocomplete();
+      return;
+    }
+
+    const container = document.getElementById('ls-tag-autocomplete');
+    if (!container) return;
+
+    container.innerHTML = '';
+    for (const tag of suggestions) {
+      const item = document.createElement('div');
+      item.className = 'ls-tag-autocomplete-item';
+      item.textContent = tag;
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (!currentTags.includes(tag)) {
+          currentTags.push(tag);
+          renderTags();
+        }
+        input.value = '';
+        hideAutocomplete();
+      });
+      container.appendChild(item);
+    }
+    container.classList.remove('ls-hidden');
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(hideAutocomplete, 150);
+  });
 }
 
-function populateManualLinks(uid: number, bookName: string): void {
-  const container = document.getElementById('ls-manual-links-list');
+function renderTags(): void {
+  const container = document.getElementById('ls-tag-container');
   if (!container) return;
 
-  const links = getLinksForEntry(bookName, String(uid));
-  const entries = getEntries(bookName);
-
   container.innerHTML = '';
-
-  if (links.length === 0) {
-    container.innerHTML = '<div style="font-size: 11px; color: var(--ls-text-muted); padding: 4px 0;">No manual links</div>';
-    return;
-  }
-
-  for (const link of links) {
-    const isSource = link.sourceUid === String(uid);
-    const otherUid = isSource ? link.targetUid : link.sourceUid;
-    const otherEntry = entries.find((e) => String(e.uid) === otherUid);
-    const otherName = otherEntry?.comment || `Entry ${otherUid}`;
-    const direction = isSource ? '\u2192' : '\u2190';
-
-    const item = document.createElement('div');
-    item.className = 'ls-manual-link-item';
-    item.innerHTML = `
-      <span>${direction} ${escapeHtml(otherName)}${link.label ? ` (${escapeHtml(link.label)})` : ''}</span>
-      <button class="ls-link-remove" data-source="${link.sourceUid}" data-target="${link.targetUid}" title="Remove link">&times;</button>
-    `;
-
-    const removeBtn = item.querySelector('.ls-link-remove') as HTMLElement;
-    removeBtn?.addEventListener('click', () => {
-      removeManualLink(bookName, link.sourceUid, link.targetUid);
-      populateManualLinks(uid, bookName);
+  for (const tag of currentTags) {
+    const pill = document.createElement('span');
+    pill.className = 'ls-tag-pill';
+    pill.innerHTML = `${escapeHtml(tag)}<button class="ls-tag-remove">&times;</button>`;
+    pill.querySelector('.ls-tag-remove')?.addEventListener('click', () => {
+      currentTags = currentTags.filter((t) => t !== tag);
+      renderTags();
     });
-
-    container.appendChild(item);
+    container.appendChild(pill);
   }
 }
 
-function populateLinkTargets(uid: number, bookName: string): void {
-  const select = document.getElementById('ls-link-target-select') as HTMLSelectElement | null;
-  if (!select) return;
-
-  const entries = getEntries(bookName);
-  select.innerHTML = '<option value="">-- Connect to... --</option>';
-
-  for (const entry of entries) {
-    if (entry.uid === uid) continue;
-    const option = document.createElement('option');
-    option.value = String(entry.uid);
-    option.textContent = entry.comment || `Entry ${entry.uid}`;
-    select.appendChild(option);
-  }
+function hideAutocomplete(): void {
+  document.getElementById('ls-tag-autocomplete')?.classList.add('ls-hidden');
 }
 
 // --- Resize handle ---

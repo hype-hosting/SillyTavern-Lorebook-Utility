@@ -5,6 +5,7 @@
 
 import { createEntry, deleteEntry, updateEntry, getEntries, LorebookEntry } from '../data/lorebookData';
 import { removeLinksForEntry } from '../data/manualLinks';
+import { cleanupEntryMeta } from '../data/studioData';
 
 /**
  * Create a new entry and notify the graph.
@@ -56,6 +57,9 @@ export async function duplicateEntryById(
 export function deleteEntryById(bookName: string, uid: number): boolean {
   // Remove manual links referencing this entry
   removeLinksForEntry(bookName, String(uid));
+
+  // Remove studio metadata for this entry
+  cleanupEntryMeta(bookName, String(uid));
 
   // Delete the entry itself
   return deleteEntry(bookName, uid);
