@@ -100,17 +100,29 @@ function loadEntryIntoSidebar(uid: number, bookName: string): void {
   setInputValue('ls-entry-comment', entry.comment);
   setInputValue('ls-entry-keys', entry.key.join(', '));
   setInputValue('ls-entry-keysecondary', entry.keysecondary.join(', '));
+  setSelectValue('ls-entry-selective-logic', String(entry.selectiveLogic));
   setTextareaValue('ls-entry-content', entry.content);
   setSelectValue('ls-entry-position', String(entry.position));
   setInputValue('ls-entry-depth', String(entry.depth));
   setInputValue('ls-entry-order', String(entry.order));
   setInputValue('ls-entry-probability', String(entry.probability));
+  setNullableNumber('ls-entry-scan-depth', entry.scanDepth);
+  setInputValue('ls-entry-automation-id', entry.automationId);
   setInputValue('ls-entry-group', entry.group);
+  setInputValue('ls-entry-group-weight', String(entry.groupWeight));
   setCheckbox('ls-entry-enabled', !entry.disable);
   setCheckbox('ls-entry-constant', entry.constant);
   setCheckbox('ls-entry-selective', entry.selective);
+  setCheckbox('ls-entry-case-sensitive', entry.caseSensitive === true);
+  setCheckbox('ls-entry-match-whole-words', entry.matchWholeWords === true);
+  setCheckbox('ls-entry-use-group-scoring', entry.useGroupScoring === true);
   setCheckbox('ls-entry-exclude-recursion', entry.excludeRecursion);
   setCheckbox('ls-entry-prevent-recursion', entry.preventRecursion);
+  setCheckbox('ls-entry-delay-until-recursion', entry.delayUntilRecursion);
+  setCheckbox('ls-entry-group-override', entry.groupOverride);
+  setNullableNumber('ls-entry-sticky', entry.sticky);
+  setNullableNumber('ls-entry-cooldown', entry.cooldown);
+  setNullableNumber('ls-entry-delay', entry.delay);
 
   populateStudioSection(uid, bookName);
 }
@@ -164,24 +176,41 @@ function saveEntry(): void {
   const comment = getInputValue('ls-entry-comment');
   const keysStr = getInputValue('ls-entry-keys');
   const keysecondaryStr = getInputValue('ls-entry-keysecondary');
+  const selectiveLogic = parseInt(getSelectValue('ls-entry-selective-logic') || '0');
   const content = getTextareaValue('ls-entry-content');
   const position = parseInt(getSelectValue('ls-entry-position') || '0');
   const depth = parseInt(getInputValue('ls-entry-depth') || '4');
   const order = parseInt(getInputValue('ls-entry-order') || '100');
   const probability = parseInt(getInputValue('ls-entry-probability') || '100');
+  const scanDepth = getNullableNumber('ls-entry-scan-depth');
+  const automationId = getInputValue('ls-entry-automation-id');
   const group = getInputValue('ls-entry-group');
+  const groupWeight = parseInt(getInputValue('ls-entry-group-weight') || '100');
   const enabled = getCheckbox('ls-entry-enabled');
   const constant = getCheckbox('ls-entry-constant');
   const selective = getCheckbox('ls-entry-selective');
+  const caseSensitive = getCheckbox('ls-entry-case-sensitive') || null;
+  const matchWholeWords = getCheckbox('ls-entry-match-whole-words') || null;
+  const useGroupScoring = getCheckbox('ls-entry-use-group-scoring') || null;
   const excludeRecursion = getCheckbox('ls-entry-exclude-recursion');
   const preventRecursion = getCheckbox('ls-entry-prevent-recursion');
+  const delayUntilRecursion = getCheckbox('ls-entry-delay-until-recursion');
+  const groupOverride = getCheckbox('ls-entry-group-override');
+  const sticky = getNullableNumber('ls-entry-sticky');
+  const cooldown = getNullableNumber('ls-entry-cooldown');
+  const delay = getNullableNumber('ls-entry-delay');
 
   const fields: Partial<LorebookEntry> = {
     comment,
     key: keysStr.split(',').map((k) => k.trim()).filter(Boolean),
     keysecondary: keysecondaryStr.split(',').map((k) => k.trim()).filter(Boolean),
+    selectiveLogic,
     content, position, depth, order, probability, group,
+    groupWeight, scanDepth, automationId,
+    caseSensitive, matchWholeWords, useGroupScoring,
     disable: !enabled, constant, selective, excludeRecursion, preventRecursion,
+    delayUntilRecursion, groupOverride,
+    sticky, cooldown, delay,
   };
 
   const success = updateEntry(bookName, selectedEntry.uid, fields);
@@ -238,17 +267,29 @@ async function duplicateEntry(): Promise<void> {
     comment: (selectedEntry.comment || 'Entry') + ' (copy)',
     key: [...selectedEntry.key],
     keysecondary: [...selectedEntry.keysecondary],
+    selectiveLogic: selectedEntry.selectiveLogic,
     content: selectedEntry.content,
     position: selectedEntry.position,
     depth: selectedEntry.depth,
     order: selectedEntry.order,
     probability: selectedEntry.probability,
+    scanDepth: selectedEntry.scanDepth,
+    automationId: selectedEntry.automationId,
     group: selectedEntry.group,
+    groupWeight: selectedEntry.groupWeight,
     disable: selectedEntry.disable,
     constant: selectedEntry.constant,
     selective: selectedEntry.selective,
+    caseSensitive: selectedEntry.caseSensitive,
+    matchWholeWords: selectedEntry.matchWholeWords,
+    useGroupScoring: selectedEntry.useGroupScoring,
     excludeRecursion: selectedEntry.excludeRecursion,
     preventRecursion: selectedEntry.preventRecursion,
+    delayUntilRecursion: selectedEntry.delayUntilRecursion,
+    groupOverride: selectedEntry.groupOverride,
+    sticky: selectedEntry.sticky,
+    cooldown: selectedEntry.cooldown,
+    delay: selectedEntry.delay,
   };
 
   updateEntry(bookName, newEntry.uid, fields);
@@ -440,6 +481,18 @@ function getSelectValue(id: string): string {
 
 function getCheckbox(id: string): boolean {
   return (document.getElementById(id) as HTMLInputElement | null)?.checked || false;
+}
+
+function setNullableNumber(id: string, value: number | null): void {
+  const el = document.getElementById(id) as HTMLInputElement | null;
+  if (el) el.value = value !== null && value !== undefined ? String(value) : '';
+}
+
+function getNullableNumber(id: string): number | null {
+  const el = document.getElementById(id) as HTMLInputElement | null;
+  if (!el || el.value === '') return null;
+  const num = parseInt(el.value);
+  return isNaN(num) ? null : num;
 }
 
 function escapeHtml(str: string): string {

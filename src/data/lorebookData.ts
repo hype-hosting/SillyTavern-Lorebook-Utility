@@ -26,12 +26,20 @@ export interface LorebookEntry {
   disable: boolean;
   excludeRecursion: boolean;
   preventRecursion: boolean;
+  delayUntilRecursion: boolean;
   position: number;
   depth: number;
   order: number;
   group: string;
+  groupOverride: boolean;
+  groupWeight: number;
   probability: number;
   useProbability: boolean;
+  scanDepth: number | null;
+  caseSensitive: boolean | null;
+  matchWholeWords: boolean | null;
+  useGroupScoring: boolean | null;
+  automationId: string;
   sticky: number | null;
   cooldown: number | null;
   delay: number | null;
@@ -385,12 +393,20 @@ function normalizeEntry(entry: WorldInfoEntry): LorebookEntry {
     disable: entry.disable || false,
     excludeRecursion: entry.excludeRecursion || false,
     preventRecursion: entry.preventRecursion || false,
+    delayUntilRecursion: entry.delayUntilRecursion || false,
     position: entry.position ?? 0,
     depth: entry.depth ?? 4,
     order: entry.order ?? 100,
     group: entry.group || '',
+    groupOverride: entry.groupOverride || false,
+    groupWeight: entry.groupWeight ?? 100,
     probability: entry.probability ?? 100,
     useProbability: entry.useProbability || false,
+    scanDepth: entry.scanDepth ?? null,
+    caseSensitive: entry.caseSensitive ?? null,
+    matchWholeWords: entry.matchWholeWords ?? null,
+    useGroupScoring: entry.useGroupScoring ?? null,
+    automationId: entry.automationId || '',
     sticky: entry.sticky ?? null,
     cooldown: entry.cooldown ?? null,
     delay: entry.delay ?? null,

@@ -101,9 +101,20 @@
             <label class="ls-label" for="ls-entry-keys">Primary Keys <span class="ls-hint">(comma-separated)</span></label>
             <input type="text" id="ls-entry-keys" class="ls-input" />
           </div>
-          <div class="ls-field">
-            <label class="ls-label" for="ls-entry-keysecondary">Secondary Keys <span class="ls-hint">(comma-separated)</span></label>
-            <input type="text" id="ls-entry-keysecondary" class="ls-input" />
+          <div class="ls-field-row">
+            <div class="ls-field ls-flex-grow">
+              <label class="ls-label" for="ls-entry-keysecondary">Secondary Keys <span class="ls-hint">(comma-separated)</span></label>
+              <input type="text" id="ls-entry-keysecondary" class="ls-input" />
+            </div>
+            <div class="ls-field" style="min-width: 110px;">
+              <label class="ls-label" for="ls-entry-selective-logic">Logic</label>
+              <select id="ls-entry-selective-logic" class="ls-select">
+                <option value="0">AND ANY</option>
+                <option value="1">AND ALL</option>
+                <option value="2">NOT ANY</option>
+                <option value="3">NOT ALL</option>
+              </select>
+            </div>
           </div>
           <div class="ls-field">
             <label class="ls-label" for="ls-entry-content">Content</label>
@@ -133,13 +144,29 @@
               <input type="number" id="ls-entry-order" class="ls-input" min="0" max="999" />
             </div>
             <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-probability">Probability %</label>
+              <label class="ls-label" for="ls-entry-probability">Trigger %</label>
               <input type="number" id="ls-entry-probability" class="ls-input" min="0" max="100" />
             </div>
           </div>
-          <div class="ls-field">
-            <label class="ls-label" for="ls-entry-group">Group</label>
-            <input type="text" id="ls-entry-group" class="ls-input" />
+          <div class="ls-field-row">
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-scan-depth">Scan Depth <span class="ls-hint">(null = default)</span></label>
+              <input type="number" id="ls-entry-scan-depth" class="ls-input" min="0" max="100" placeholder="null" />
+            </div>
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-automation-id">Automation ID</label>
+              <input type="text" id="ls-entry-automation-id" class="ls-input" placeholder="" />
+            </div>
+          </div>
+          <div class="ls-field-row">
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-group">Group</label>
+              <input type="text" id="ls-entry-group" class="ls-input" />
+            </div>
+            <div class="ls-field ls-field-half">
+              <label class="ls-label" for="ls-entry-group-weight">Group Weight</label>
+              <input type="number" id="ls-entry-group-weight" class="ls-input" min="0" max="9999" />
+            </div>
           </div>
           <div class="ls-field-row ls-toggles">
             <label class="ls-toggle">
@@ -157,13 +184,51 @@
           </div>
           <div class="ls-field-row ls-toggles">
             <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-case-sensitive" />
+              <span>Case-Sensitive</span>
+            </label>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-match-whole-words" />
+              <span>Match Whole Words</span>
+            </label>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-use-group-scoring" />
+              <span>Group Scoring</span>
+            </label>
+          </div>
+          <div class="ls-field-row ls-toggles">
+            <label class="ls-toggle">
               <input type="checkbox" id="ls-entry-exclude-recursion" />
-              <span>Exclude Recursion</span>
+              <span>Non-Recursable</span>
             </label>
             <label class="ls-toggle">
               <input type="checkbox" id="ls-entry-prevent-recursion" />
               <span>Prevent Recursion</span>
             </label>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-delay-until-recursion" />
+              <span>Delay Until Recursion</span>
+            </label>
+          </div>
+          <div class="ls-field-row ls-toggles">
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-entry-group-override" />
+              <span>Prioritize</span>
+            </label>
+          </div>
+          <div class="ls-field-row">
+            <div class="ls-field ls-field-third">
+              <label class="ls-label" for="ls-entry-sticky">Sticky</label>
+              <input type="number" id="ls-entry-sticky" class="ls-input" min="0" max="999" placeholder="null" />
+            </div>
+            <div class="ls-field ls-field-third">
+              <label class="ls-label" for="ls-entry-cooldown">Cooldown</label>
+              <input type="number" id="ls-entry-cooldown" class="ls-input" min="0" max="999" placeholder="null" />
+            </div>
+            <div class="ls-field ls-field-third">
+              <label class="ls-label" for="ls-entry-delay">Delay</label>
+              <input type="number" id="ls-entry-delay" class="ls-input" min="0" max="999" placeholder="null" />
+            </div>
           </div>
 
           <!-- Studio Metadata -->

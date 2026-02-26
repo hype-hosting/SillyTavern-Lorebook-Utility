@@ -259,6 +259,11 @@
   flex: 1;
 }
 
+.ls-field-third {
+  flex: 1;
+  min-width: 0;
+}
+
 .ls-label {
   display: block;
   font-size: 11px;

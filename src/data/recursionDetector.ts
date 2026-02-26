@@ -29,6 +29,9 @@ let cacheHash = '';
  * ST's recursion scanning.
  *
  * Direction: B -> A (B's content triggers A)
+ *
+ * Respects per-entry matchWholeWords and caseSensitive settings,
+ * matching SillyTavern's own matching behavior.
  */
 export function detectRecursions(entries: LorebookEntry[]): RecursionEdge[] {
   const hash = computeHash(entries);
@@ -42,8 +45,11 @@ export function detectRecursions(entries: LorebookEntry[]): RecursionEdge[] {
     // Skip disabled entries or entries with recursion prevention
     if (entryA.disable || entryA.preventRecursion) continue;
 
-    const primaryKeys = parseKeys(entryA.key);
-    const secondaryKeys = parseKeys(entryA.keysecondary);
+    const caseSensitive = entryA.caseSensitive === true;
+    const wholeWords = entryA.matchWholeWords === true;
+
+    const primaryKeys = parseKeys(entryA.key, caseSensitive);
+    const secondaryKeys = parseKeys(entryA.keysecondary, caseSensitive);
 
     for (const entryB of entries) {
       if (entryB.uid === entryA.uid) continue;
@@ -55,7 +61,7 @@ export function detectRecursions(entries: LorebookEntry[]): RecursionEdge[] {
 
       // Check primary keys
       for (const key of primaryKeys) {
-        if (matchKeyInContent(key, contentToScan)) {
+        if (matchKeyInContent(key, contentToScan, caseSensitive, wholeWords)) {
           edges.push({
             sourceUid: entryB.uid,
             targetUid: entryA.uid,
@@ -69,7 +75,7 @@ export function detectRecursions(entries: LorebookEntry[]): RecursionEdge[] {
       // Check secondary keys if entry uses selective mode
       if (entryA.selective && secondaryKeys.length > 0) {
         for (const key of secondaryKeys) {
-          if (matchKeyInContent(key, contentToScan)) {
+          if (matchKeyInContent(key, contentToScan, caseSensitive, wholeWords)) {
             edges.push({
               sourceUid: entryB.uid,
               targetUid: entryA.uid,
@@ -105,8 +111,10 @@ interface ParsedKey {
 /**
  * Parse an array of key strings into searchable patterns.
  * Keys can be plain text or regex patterns (surrounded by / /).
+ *
+ * @param caseSensitive - Whether the owning entry has case-sensitive matching enabled
  */
-function parseKeys(keys: string[]): ParsedKey[] {
+function parseKeys(keys: string[], caseSensitive: boolean): ParsedKey[] {
   const parsed: ParsedKey[] = [];
 
   for (const rawKey of keys) {
@@ -126,10 +134,10 @@ function parseKeys(keys: string[]): ParsedKey[] {
           parsed.push({ original: key, regex, plainText: '' });
         } catch {
           // Invalid regex, treat as plain text
-          parsed.push({ original: key, regex: null, plainText: key.toLowerCase() });
+          parsed.push({ original: key, regex: null, plainText: caseSensitive ? key : key.toLowerCase() });
         }
       } else {
-        parsed.push({ original: key, regex: null, plainText: key.toLowerCase() });
+        parsed.push({ original: key, regex: null, plainText: caseSensitive ? key : key.toLowerCase() });
       }
     }
   }
@@ -139,26 +147,44 @@ function parseKeys(keys: string[]): ParsedKey[] {
 
 /**
  * Check if a parsed key matches within the given content.
+ *
+ * @param caseSensitive - Whether matching should be case-sensitive
+ * @param wholeWords - Whether matching should require whole-word boundaries
  */
-function matchKeyInContent(key: ParsedKey, content: string): boolean {
+function matchKeyInContent(
+  key: ParsedKey,
+  content: string,
+  caseSensitive: boolean,
+  wholeWords: boolean,
+): boolean {
   if (key.regex) {
     return key.regex.test(content);
   }
 
   if (!key.plainText) return false;
 
-  // Case-insensitive plain text search
-  return content.toLowerCase().includes(key.plainText);
+  const haystack = caseSensitive ? content : content.toLowerCase();
+
+  if (wholeWords) {
+    // Use word-boundary regex to match whole words only,
+    // matching SillyTavern's own behavior
+    const escaped = key.plainText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const flags = caseSensitive ? '' : 'i';
+    const wordRegex = new RegExp(`\\b${escaped}\\b`, flags);
+    return wordRegex.test(content);
+  }
+
+  return haystack.includes(key.plainText);
 }
 
 /**
  * Compute a simple hash of entries for cache invalidation.
  */
 function computeHash(entries: LorebookEntry[]): string {
-  // Use a combination of entry count, UIDs, and key content
+  // Use a combination of entry count, UIDs, key content, and matching settings
   const parts = entries.map(
     (e) =>
-      `${e.uid}:${e.key.join(',')}:${e.keysecondary.join(',')}:${e.content.length}:${e.disable}:${e.excludeRecursion}:${e.preventRecursion}`,
+      `${e.uid}:${e.key.join(',')}:${e.keysecondary.join(',')}:${e.content.length}:${e.disable}:${e.excludeRecursion}:${e.preventRecursion}:${e.caseSensitive}:${e.matchWholeWords}`,
   );
   return parts.join('|');
 }
