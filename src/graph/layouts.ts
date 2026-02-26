@@ -1,79 +1,111 @@
 /**
- * Layout algorithm configurations for Cytoscape.js.
+ * Layout configurations for the 3D force graph.
+ * Provides force-directed and geometric layout alternatives.
  */
 
-export type LayoutName = 'cose' | 'grid' | 'circle' | 'breadthfirst';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LayoutConfig = Record<string, any>;
+export type LayoutName = 'force' | 'grid' | 'sphere' | 'helix';
 
 /**
- * Get a layout configuration by name.
+ * Configure d3-force-3d forces on the graph based on node count.
  */
-export function getLayoutConfig(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function configureForces(graph: any, nodeCount: number): void {
+  const chargeStrength = -100 - nodeCount * 2;
+  const linkDistance = 60 + Math.min(nodeCount * 0.5, 100);
+
+  const charge = graph.d3Force('charge');
+  if (charge) charge.strength(chargeStrength);
+
+  const link = graph.d3Force('link');
+  if (link) link.distance(linkDistance);
+}
+
+/**
+ * Apply a layout to the graph nodes.
+ * For 'force', releases fixed positions and reheats the simulation.
+ * For geometric layouts, computes positions and sets them as fixed.
+ */
+export function applyLayout(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  graph: any,
   name: LayoutName,
-  nodeCount: number,
-): LayoutConfig {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  nodes: any[],
+): void {
   switch (name) {
-    case 'cose': {
-      // Scale parameters with graph size for better spacing
-      const repulsion = 8000 + nodeCount * 50;
-      const edgeLen = 120 + Math.min(nodeCount * 0.8, 200);
-      const grav = Math.max(0.15, 1 - nodeCount * 0.005);
-      const iters = Math.max(1000, nodeCount * 10);
-      return {
-        name: 'cose',
-        animate: nodeCount < 80,
-        animationDuration: 500,
-        nodeRepulsion: () => repulsion,
-        idealEdgeLength: () => edgeLen,
-        edgeElasticity: () => 45,
-        nestingFactor: 1.2,
-        gravity: grav,
-        numIter: iters,
-        initialTemp: 300,
-        coolingFactor: 0.93,
-        minTemp: 0.5,
-        padding: 60,
-        randomize: true,
-      };
-    }
+    case 'force':
+      // Release all fixed positions and reheat
+      nodes.forEach((n) => {
+        n.fx = undefined;
+        n.fy = undefined;
+        n.fz = undefined;
+      });
+      graph.d3ReheatSimulation();
+      break;
 
     case 'grid':
-      return {
-        name: 'grid',
-        animate: true,
-        animationDuration: 500,
-        padding: 30,
-        avoidOverlap: true,
-        avoidOverlapPadding: 20,
-        condense: false,
-      };
+      applyGridLayout(nodes);
+      graph.d3ReheatSimulation();
+      break;
 
-    case 'circle':
-      return {
-        name: 'circle',
-        animate: true,
-        animationDuration: 500,
-        padding: 30,
-        avoidOverlap: true,
-        spacingFactor: 1.5,
-      };
+    case 'sphere':
+      applySphereLayout(nodes);
+      graph.d3ReheatSimulation();
+      break;
 
-    case 'breadthfirst':
-      return {
-        name: 'breadthfirst',
-        animate: true,
-        animationDuration: 500,
-        directed: true,
-        padding: 30,
-        spacingFactor: 1.2,
-        avoidOverlap: true,
-      };
+    case 'helix':
+      applyHelixLayout(nodes);
+      graph.d3ReheatSimulation();
+      break;
 
     default:
-      return getLayoutConfig('cose', nodeCount);
+      applyLayout(graph, 'force', nodes);
   }
+}
+
+function applyGridLayout(nodes: { fx?: number; fy?: number; fz?: number }[]): void {
+  const count = nodes.length;
+  const cols = Math.max(1, Math.ceil(Math.cbrt(count)));
+  const rows = Math.max(1, Math.ceil(count / cols));
+  const spacing = 50;
+
+  nodes.forEach((node, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols) % rows;
+    const layer = Math.floor(i / (cols * rows));
+    node.fx = (col - cols / 2) * spacing;
+    node.fy = (row - rows / 2) * spacing;
+    node.fz = (layer - 1) * spacing;
+  });
+}
+
+function applySphereLayout(nodes: { fx?: number; fy?: number; fz?: number }[]): void {
+  const count = nodes.length;
+  const radius = 40 + count * 2;
+
+  nodes.forEach((node, i) => {
+    // Fibonacci sphere distribution
+    const phi = Math.acos(1 - (2 * (i + 0.5)) / count);
+    const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    node.fx = radius * Math.sin(phi) * Math.cos(theta);
+    node.fy = radius * Math.sin(phi) * Math.sin(theta);
+    node.fz = radius * Math.cos(phi);
+  });
+}
+
+function applyHelixLayout(nodes: { fx?: number; fy?: number; fz?: number }[]): void {
+  const count = nodes.length;
+  const radius = 30 + count;
+  const heightStep = 8;
+  const turns = Math.max(2, count / 8);
+
+  nodes.forEach((node, i) => {
+    const t = i / Math.max(1, count - 1);
+    const angle = t * turns * 2 * Math.PI;
+    node.fx = radius * Math.cos(angle);
+    node.fy = (i - count / 2) * heightStep;
+    node.fz = radius * Math.sin(angle);
+  });
 }
 
 /**
@@ -81,9 +113,9 @@ export function getLayoutConfig(
  */
 export function getAvailableLayouts(): Array<{ name: LayoutName; label: string }> {
   return [
-    { name: 'cose', label: 'Force-Directed' },
-    { name: 'grid', label: 'Grid' },
-    { name: 'circle', label: 'Circle' },
-    { name: 'breadthfirst', label: 'Hierarchical' },
+    { name: 'force', label: 'Force-Directed 3D' },
+    { name: 'grid', label: '3D Grid' },
+    { name: 'sphere', label: 'Sphere' },
+    { name: 'helix', label: 'Helix' },
   ];
 }

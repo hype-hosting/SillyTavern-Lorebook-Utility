@@ -1,30 +1,56 @@
 /**
- * Manages the Cytoscape.js graph instance for Lorebook Studio.
+ * Manages the 3D force-directed graph for Lorebook Studio.
  * Handles initialization, data conversion, event wiring, and lifecycle.
+ *
+ * Uses 3d-force-graph (Three.js/WebGL) with d3-force-3d physics.
  */
 
-import cytoscape from 'cytoscape';
+import ForceGraph3D from '3d-force-graph';
 import { LorebookEntry } from '../data/lorebookData';
 import { RecursionEdge } from '../data/recursionDetector';
-import { ManualLinkData, getSettings } from '../utils/settings';
+import { ManualLinkData, getSettings, updateSettings } from '../utils/settings';
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
-import { getNodeStylesheet, buildNodeLabel } from './nodeStyles';
-import { getEdgeStylesheet } from './edgeStyles';
-import { getLayoutConfig, LayoutName } from './layouts';
+import {
+  GraphNode, GraphLink, ViewMode,
+  createCardSprite, createLabelSprite, buildNodeLabel,
+} from './nodeStyles';
+import {
+  getLinkColor, getLinkWidth, getLinkOpacity,
+  getLinkVisibility, getLinkCurvature,
+  setAutoLinksVisible, setManualLinksVisible, setDimmedLinks,
+} from './edgeStyles';
+import { configureForces, applyLayout, LayoutName } from './layouts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cy: any = null;
-let currentBookName: string = '';
+let graph: any = null;
+let currentBookName = '';
+let graphContainer: HTMLElement | null = null;
 
-// Node-select handler reference (for connect mode to disable/enable)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let nodeSelectHandler: ((evt: any) => void) | null = null;
+// Node/link data arrays (owned by us, passed to 3d-force-graph)
+let graphNodes: GraphNode[] = [];
+let graphLinks: GraphLink[] = [];
+
+// Selection & highlight state
+let selectedNodeId: string | null = null;
+let highlightedNodeIds: Set<string> | null = null;
+let connectSourceId: string | null = null;
+
+// View mode
+let currentViewMode: ViewMode = 'cards';
+
+// Interaction flags
+let selectDisabled = false;
+
+// Connect mode callback
+let connectModeClickHandler: ((nodeId: string) => void) | null = null;
 
 // Tooltip state
 let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
 
+// --- Public API (same exports as the old Cytoscape-based graphManager) ---
+
 /**
- * Initialize the Cytoscape graph in the given container.
+ * Initialize the 3D graph in the given container.
  */
 export function initGraph(
   container: HTMLElement,
@@ -32,112 +58,107 @@ export function initGraph(
   recursionEdges: RecursionEdge[],
   manualLinks: ManualLinkData[],
   bookName: string,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   // Destroy previous instance
-  if (cy) {
-    cy.destroy();
+  if (graph) {
+    destroyGraph();
   }
 
   currentBookName = bookName;
+  graphContainer = container;
   const settings = getSettings();
 
-  // Convert entries to Cytoscape nodes
-  const nodes = entries.map((entry) => buildNode(entry, recursionEdges, manualLinks, settings.showKeywordsOnNodes));
-
-  // Convert edges
-  const edges = [
-    ...recursionEdges.map((edge) => buildAutoEdge(edge)),
-    ...manualLinks.map((link) => buildManualEdge(link)),
+  // Build node and link data
+  graphNodes = entries.map((entry) =>
+    buildNode(entry, recursionEdges, manualLinks, settings.showKeywordsOnNodes),
+  );
+  graphLinks = [
+    ...recursionEdges.map((edge) => buildAutoLink(edge)),
+    ...manualLinks.map((link) => buildManualLink(link)),
   ];
 
-  // Merge stylesheet
+  // Apply edge visibility settings
+  setAutoLinksVisible(settings.showAutoLinks);
+  setManualLinksVisible(settings.showManualLinks);
+
+  // Restore saved positions
+  const hadPositions = restorePositions(bookName, graphNodes);
+
+  // Create the 3D force graph
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stylesheet: any[] = [
-    ...getNodeStylesheet(),
-    ...getEdgeStylesheet(),
-  ];
+  graph = (new ForceGraph3D(container, { controlType: 'orbit' }) as any)
+    .graphData({ nodes: graphNodes, links: graphLinks })
+    .nodeId('id')
+    .nodeLabel('')  // We handle tooltips ourselves
+    .backgroundColor('#13111c')
+    .width(container.clientWidth)
+    .height(container.clientHeight)
+    .showNavInfo(false)
+    // Node rendering
+    .nodeThreeObject((node: GraphNode) => createNodeObject(node))
+    .nodeThreeObjectExtend(false)
+    // Link rendering
+    .linkSource('source')
+    .linkTarget('target')
+    .linkColor((link: GraphLink) => getLinkColor(link))
+    .linkWidth((link: GraphLink) => getLinkWidth(link))
+    .linkOpacity((link: GraphLink) => getLinkOpacity(link))
+    .linkCurvature((link: GraphLink) => getLinkCurvature(link))
+    .linkCurveRotation(0.5)
+    .linkDirectionalArrowLength(3)
+    .linkDirectionalArrowRelPos(1)
+    .linkDirectionalArrowColor((link: GraphLink) => getLinkColor(link))
+    .linkVisibility((link: GraphLink) => getLinkVisibility(link))
+    // Interactions
+    .onNodeClick(handleNodeClick)
+    .onNodeRightClick(handleNodeRightClick)
+    .onNodeHover(handleNodeHover)
+    .onNodeDragEnd(handleNodeDragEnd)
+    .onBackgroundClick(handleBackgroundClick)
+    .onBackgroundRightClick(handleBackgroundClick)
+    .enableNodeDrag(true)
+    .enableNavigationControls(true);
 
-  cy = cytoscape({
-    container,
-    elements: [...nodes, ...edges],
-    style: stylesheet,
-    layout: { name: 'preset' }, // We'll run layout manually below
-    minZoom: 0.05,
-    maxZoom: 4,
-    wheelSensitivity: 0.3,
-    boxSelectionEnabled: false,
-    selectionType: 'single',
-  });
+  // Configure forces based on node count
+  configureForces(graph, graphNodes.length);
 
-  // Prevent browser context menu on the graph container
-  container.addEventListener('contextmenu', (e) => e.preventDefault());
+  // Prevent browser context menu on the container
+  container.addEventListener('contextmenu', preventContextMenu);
 
-  // Restore saved positions if available
-  const hadPositions = restorePositions(bookName);
-
-  // Wire up events
-  setupEvents();
-
-  // Apply edge label visibility
-  if (!settings.showEdgeLabels) {
-    cy.edges().addClass('ls-no-label');
+  // If positions were restored, don't run the simulation (keep positions fixed)
+  if (hadPositions) {
+    graph.cooldownTime(0);
+    setTimeout(() => {
+      if (graph) {
+        graph.cooldownTime(Infinity);
+        zoomToFitAll();
+      }
+    }, 100);
+  } else {
+    // Let the simulation settle, then zoom to fit
+    setTimeout(() => {
+      if (graph) zoomToFitAll();
+    }, 2000);
   }
 
-  // Run layout if no saved positions
-  if (!hadPositions) {
-    const layoutConfig = getLayoutConfig(settings.defaultLayout as LayoutName, nodes.length);
-    layoutConfig.stop = () => {
-      spreadOrphanNodes();
-      if (cy) cy.fit(undefined, 50);
-    };
-    const layout = cy.layout(layoutConfig as cytoscape.LayoutOptions);
-    layout.run();
-  }
-
-  // Ensure graph is properly sized after container is fully rendered
-  setTimeout(() => {
-    if (cy) {
-      cy.resize();
-      cy.fit(undefined, 50);
-    }
-  }, 200);
-
-  return cy;
+  return graph;
 }
 
 /**
- * Get the current Cytoscape instance.
+ * Get the current graph instance.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getGraph(): any {
-  return cy;
+  return graph;
 }
 
 /**
- * Resize the graph to fit its container. Call after layout changes (sidebar open/close).
+ * Resize the graph to fit its container.
  */
 export function resizeGraph(): void {
-  if (cy) {
-    cy.resize();
-  }
-}
-
-/**
- * Temporarily disable node selection (for connect mode).
- */
-export function disableNodeSelect(): void {
-  if (cy && nodeSelectHandler) {
-    cy.off('tap', 'node', nodeSelectHandler);
-  }
-}
-
-/**
- * Re-enable node selection (when exiting connect mode).
- */
-export function enableNodeSelect(): void {
-  if (cy && nodeSelectHandler) {
-    cy.on('tap', 'node', nodeSelectHandler);
+  if (graph && graphContainer) {
+    graph.width(graphContainer.clientWidth).height(graphContainer.clientHeight);
   }
 }
 
@@ -145,218 +166,199 @@ export function enableNodeSelect(): void {
  * Destroy the graph instance and save positions.
  */
 export function destroyGraph(): void {
-  if (cy) {
+  if (graph) {
     savePositions(currentBookName);
-    cy.destroy();
-    cy = null;
+    // Clean up the graph
+    if (graphContainer) {
+      graphContainer.removeEventListener('contextmenu', preventContextMenu);
+      graphContainer.innerHTML = '';
+    }
+    graph._destructor?.();
+    graph = null;
   }
+  graphNodes = [];
+  graphLinks = [];
+  selectedNodeId = null;
+  highlightedNodeIds = null;
+  connectSourceId = null;
   hideTooltip();
 }
 
 /**
- * Refresh the graph with updated data.
+ * Refresh the graph with updated data (after entry edit/create/delete).
  */
 export function refreshGraph(
   entries: LorebookEntry[],
   recursionEdges: RecursionEdge[],
   manualLinks: ManualLinkData[],
 ): void {
-  if (!cy) return;
+  if (!graph) return;
 
   const settings = getSettings();
 
-  cy.startBatch();
+  // Remember the selected node
+  const prevSelectedId = selectedNodeId;
 
-  // Build sets of current and new element IDs
-  const newNodeIds = new Set(entries.map((e) => String(e.uid)));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const currentNodeIds = new Set(cy.nodes().map((n: any) => n.id()));
-
-  // Remove nodes that no longer exist
-  for (const id of currentNodeIds as Set<string>) {
-    if (!newNodeIds.has(id)) {
-      cy.getElementById(id).remove();
-    }
+  // Build new data, preserving positions from existing nodes
+  const positionMap = new Map<string, { x?: number; y?: number; z?: number; fx?: number; fy?: number; fz?: number }>();
+  for (const node of graphNodes) {
+    positionMap.set(node.id, {
+      x: node.x, y: node.y, z: node.z,
+      fx: node.fx, fy: node.fy, fz: node.fz,
+    });
   }
 
-  // Remember selected node to restore after refresh
-  const selectedId = cy.$(':selected').nonempty() ? cy.$(':selected')[0].id() : null;
-
-  // Add or update nodes
-  for (const entry of entries) {
-    const id = String(entry.uid);
-    const existing = cy.getElementById(id);
-
-    if (existing.length > 0) {
-      // Update all node data fields
-      existing.data(
-        'label',
-        buildNodeLabel(entry.comment, entry.key, settings.showKeywordsOnNodes),
-      );
-      existing.data('comment', entry.comment);
-      existing.data('disabled', entry.disable);
-      existing.data('constant', entry.constant);
-      existing.data('selective', entry.selective);
-      existing.data('keys', entry.key);
-      existing.data('content', entry.content);
-      existing.data('contentPreview', entry.content.substring(0, 100));
-    } else {
-      // Add new node
-      const node = buildNode(entry, recursionEdges, manualLinks, settings.showKeywordsOnNodes);
-      cy.add(node);
+  graphNodes = entries.map((entry) => {
+    const node = buildNode(entry, recursionEdges, manualLinks, settings.showKeywordsOnNodes);
+    const saved = positionMap.get(node.id);
+    if (saved) {
+      node.x = saved.x;
+      node.y = saved.y;
+      node.z = saved.z;
+      node.fx = saved.fx;
+      node.fy = saved.fy;
+      node.fz = saved.fz;
     }
-  }
+    return node;
+  });
 
-  // Remove all edges and re-add (simpler than diffing)
-  cy.edges().remove();
+  graphLinks = [
+    ...recursionEdges.map((edge) => buildAutoLink(edge)),
+    ...manualLinks.map((link) => buildManualLink(link)),
+  ];
 
-  const autoEdges = recursionEdges.map((edge) => buildAutoEdge(edge));
-  const manualEdges = manualLinks.map((link) => buildManualEdge(link));
-  cy.add([...autoEdges, ...manualEdges]);
-
-  // Update orphan status
-  updateOrphanStatus();
-
-  cy.endBatch();
+  // Update the graph
+  graph.graphData({ nodes: graphNodes, links: graphLinks });
 
   // Restore selection
-  if (selectedId) {
-    const node = cy.getElementById(selectedId);
-    if (node.length > 0) {
-      node.select();
-    }
+  if (prevSelectedId) {
+    selectedNodeId = graphNodes.find((n) => n.id === prevSelectedId) ? prevSelectedId : null;
   }
 
-  // Apply visibility settings
-  applyEdgeVisibility();
-
-  if (!settings.showEdgeLabels) {
-    cy.edges().addClass('ls-no-label');
-  }
+  // Refresh visual state
+  refreshNodeObjects();
 }
 
 /**
  * Run a layout on the graph.
  */
 export function runLayout(layoutName: LayoutName): void {
-  if (!cy) return;
-  const config = getLayoutConfig(layoutName, cy.nodes().length);
-  config.stop = () => {
-    spreadOrphanNodes();
-    if (cy) cy.fit(undefined, 50);
-  };
-  cy.layout(config as cytoscape.LayoutOptions).run();
+  if (!graph) return;
+  applyLayout(graph, layoutName, graphNodes);
   EventBus.emit(STUDIO_EVENTS.LAYOUT_CHANGED, layoutName);
 }
 
 /**
- * Fit all elements in view.
+ * Fit all nodes in view.
  */
 export function fitGraph(): void {
-  cy?.fit(undefined, 50);
+  zoomToFitAll();
 }
 
 /**
  * Zoom in.
  */
 export function zoomIn(): void {
-  if (!cy) return;
-  cy.zoom({ level: cy.zoom() * 1.2, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
+  if (!graph) return;
+  const { x, y, z } = graph.cameraPosition();
+  const factor = 0.75; // move 25% closer
+  graph.cameraPosition(
+    { x: x * factor, y: y * factor, z: z * factor },
+    undefined,
+    300,
+  );
 }
 
 /**
  * Zoom out.
  */
 export function zoomOut(): void {
-  if (!cy) return;
-  cy.zoom({ level: cy.zoom() / 1.2, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
+  if (!graph) return;
+  const { x, y, z } = graph.cameraPosition();
+  const factor = 1.35; // move 35% further
+  graph.cameraPosition(
+    { x: x * factor, y: y * factor, z: z * factor },
+    undefined,
+    300,
+  );
 }
 
 /**
- * Focus on a specific node by ID.
+ * Focus camera on a specific node by ID.
  */
 export function focusNode(nodeId: string): void {
-  if (!cy) return;
-  const node = cy.getElementById(nodeId);
-  if (node.length > 0) {
-    cy.animate({
-      center: { eles: node },
-      zoom: 1.5,
-      duration: 300,
-    });
-    node.select();
-  }
+  if (!graph) return;
+  const node = graphNodes.find((n) => n.id === nodeId);
+  if (!node || node.x === undefined) return;
+
+  // Position camera near the node, looking at it
+  const distance = 120;
+  const pos = { x: (node.x ?? 0) + distance, y: (node.y ?? 0) + distance / 2, z: (node.z ?? 0) + distance };
+  graph.cameraPosition(pos, { x: node.x, y: node.y, z: node.z }, 800);
+
+  // Select the node
+  selectedNodeId = nodeId;
+  refreshNodeObjects();
 }
 
 /**
  * Apply search highlighting: highlight matching nodes, dim others.
  */
 export function applySearchHighlight(matchingIds: Set<string>): void {
-  if (!cy) return;
-
-  cy.startBatch();
+  if (!graph) return;
 
   if (matchingIds.size === 0) {
-    cy.elements().removeClass('ls-highlighted ls-dimmed');
+    highlightedNodeIds = null;
+    setDimmedLinks(null);
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cy.nodes().forEach((node: any) => {
-      if (matchingIds.has(node.id())) {
-        node.removeClass('ls-dimmed').addClass('ls-highlighted');
-      } else {
-        node.removeClass('ls-highlighted').addClass('ls-dimmed');
+    highlightedNodeIds = matchingIds;
+    // Dim links not connected to highlighted nodes
+    const dimmed = new Set<string>();
+    for (const link of graphLinks) {
+      const srcId = typeof link.source === 'string' ? link.source : link.source.id;
+      const tgtId = typeof link.target === 'string' ? link.target : link.target.id;
+      if (!matchingIds.has(srcId) && !matchingIds.has(tgtId)) {
+        dimmed.add(link.id);
       }
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cy.edges().forEach((edge: any) => {
-      const srcMatch = matchingIds.has(edge.source().id());
-      const tgtMatch = matchingIds.has(edge.target().id());
-      if (srcMatch || tgtMatch) {
-        edge.removeClass('ls-dimmed');
-      } else {
-        edge.addClass('ls-dimmed');
-      }
-    });
+    }
+    setDimmedLinks(dimmed);
   }
 
-  cy.endBatch();
+  refreshNodeObjects();
+  // Force link re-render
+  graph.linkColor(graph.linkColor());
+  graph.linkOpacity(graph.linkOpacity());
 }
 
 /**
  * Toggle visibility of auto-detected edges.
  */
 export function toggleAutoEdges(visible: boolean): void {
-  if (!cy) return;
-  cy.edges('[type = "auto"]').toggleClass('ls-hidden', !visible);
+  setAutoLinksVisible(visible);
+  if (graph) graph.linkVisibility(graph.linkVisibility());
 }
 
 /**
  * Toggle visibility of manual link edges.
  */
 export function toggleManualEdges(visible: boolean): void {
-  if (!cy) return;
-  cy.edges('[type = "manual"]').toggleClass('ls-hidden', !visible);
+  setManualLinksVisible(visible);
+  if (graph) graph.linkVisibility(graph.linkVisibility());
 }
 
 /**
- * Toggle edge label visibility.
+ * Toggle edge label visibility (no-op in 3D for now; labels are minimal).
  */
-export function toggleEdgeLabels(visible: boolean): void {
-  if (!cy) return;
-  cy.edges().toggleClass('ls-no-label', !visible);
+export function toggleEdgeLabels(_visible: boolean): void {
+  // Edge labels in 3D are handled by linkLabel; minimal impact
 }
 
 /**
  * Get the currently selected node's UID, or null.
  */
 export function getSelectedNodeUid(): number | null {
-  if (!cy) return null;
-  const selected = cy.$(':selected');
-  if (selected.length > 0 && selected[0].isNode()) {
-    return parseInt(selected[0].id());
-  }
-  return null;
+  if (!selectedNodeId) return null;
+  return parseInt(selectedNodeId);
 }
 
 /**
@@ -366,15 +368,63 @@ export function getGraphBookName(): string {
   return currentBookName;
 }
 
+/**
+ * Disable node selection (for connect mode).
+ */
+export function disableNodeSelect(): void {
+  selectDisabled = true;
+}
+
+/**
+ * Re-enable node selection.
+ */
+export function enableNodeSelect(): void {
+  selectDisabled = false;
+}
+
+/**
+ * Register a callback for connect mode clicks.
+ * When set, node clicks route to this handler instead of normal selection.
+ */
+export function setConnectModeClickHandler(handler: ((nodeId: string) => void) | null): void {
+  connectModeClickHandler = handler;
+}
+
+/**
+ * Set or clear the connect-source highlight on a node.
+ */
+export function setNodeConnectSource(nodeId: string | null): void {
+  connectSourceId = nodeId;
+  refreshNodeObjects();
+}
+
+/**
+ * Set the view mode (cards or sprites) and re-render nodes.
+ */
+export function setViewMode(mode: ViewMode): void {
+  currentViewMode = mode;
+  refreshNodeObjects();
+}
+
+/**
+ * Get the current view mode.
+ */
+export function getViewMode(): ViewMode {
+  return currentViewMode;
+}
+
 // --- Internal helpers ---
+
+function preventContextMenu(e: Event): void {
+  e.preventDefault();
+}
 
 function buildNode(
   entry: LorebookEntry,
   recursionEdges: RecursionEdge[],
   manualLinks: ManualLinkData[],
   showKeywords: boolean,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+): GraphNode {
   const uidStr = String(entry.uid);
   const connectionCount =
     recursionEdges.filter(
@@ -384,82 +434,149 @@ function buildNode(
       (l) => l.sourceUid === uidStr || l.targetUid === uidStr,
     ).length;
 
-  const isOrphan = connectionCount === 0;
-
   return {
-    group: 'nodes',
-    data: {
-      id: uidStr,
-      label: buildNodeLabel(entry.comment, entry.key, showKeywords),
-      keys: entry.key,
-      keysecondary: entry.keysecondary,
-      comment: entry.comment,
-      content: entry.content,
-      contentPreview: entry.content.substring(0, 100),
-      disabled: entry.disable,
-      constant: entry.constant,
-      selective: entry.selective,
-      orphan: isOrphan,
-      connectionCount,
-      entryPosition: entry.position,
-      depth: entry.depth,
-      order: entry.order,
-      group: entry.group,
-      bookName: currentBookName,
-    },
+    id: uidStr,
+    uid: entry.uid,
+    label: buildNodeLabel(entry.comment, entry.key, showKeywords),
+    comment: entry.comment,
+    keys: entry.key,
+    keysecondary: entry.keysecondary,
+    content: entry.content,
+    disabled: entry.disable,
+    constant: entry.constant,
+    selective: entry.selective,
+    orphan: connectionCount === 0,
+    connectionCount,
+    entryPosition: entry.position,
+    depth: entry.depth,
+    order: entry.order,
+    group: entry.group,
+    bookName: currentBookName,
   };
+}
+
+function buildAutoLink(edge: RecursionEdge): GraphLink {
+  return {
+    id: `auto-${edge.sourceUid}-${edge.targetUid}-${edge.triggerKey}`,
+    source: String(edge.sourceUid),
+    target: String(edge.targetUid),
+    type: 'auto',
+    keyType: edge.keyType,
+    triggerKey: edge.triggerKey.length > 20
+      ? edge.triggerKey.substring(0, 17) + '...'
+      : edge.triggerKey,
+  };
+}
+
+function buildManualLink(link: ManualLinkData): GraphLink {
+  return {
+    id: `manual-${link.sourceUid}-${link.targetUid}`,
+    source: link.sourceUid,
+    target: link.targetUid,
+    type: 'manual',
+    triggerKey: link.label || 'manual',
+  };
+}
+
+function createNodeObject(node: GraphNode): unknown {
+  if (currentViewMode === 'sprites') {
+    return createLabelSprite(node, selectedNodeId, highlightedNodeIds, connectSourceId);
+  }
+  return createCardSprite(node, selectedNodeId, highlightedNodeIds, connectSourceId);
+}
+
+/**
+ * Force all node objects to be recreated (after selection/highlight changes).
+ */
+function refreshNodeObjects(): void {
+  if (!graph) return;
+  graph.nodeThreeObject((node: GraphNode) => createNodeObject(node));
+}
+
+// --- Event handlers ---
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleNodeClick(node: any, event: MouseEvent): void {
+  hideTooltip();
+
+  // Connect mode takes priority
+  if (connectModeClickHandler) {
+    connectModeClickHandler(node.id);
+    return;
+  }
+
+  if (selectDisabled) return;
+
+  selectedNodeId = node.id;
+  refreshNodeObjects();
+
+  EventBus.emit(STUDIO_EVENTS.NODE_SELECTED, {
+    uid: parseInt(node.id),
+    bookName: currentBookName,
+    nodeData: node,
+  });
+  void event;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildAutoEdge(edge: RecursionEdge): any {
-  return {
-    group: 'edges',
-    data: {
-      id: `auto-${edge.sourceUid}-${edge.targetUid}-${edge.triggerKey}`,
-      source: String(edge.sourceUid),
-      target: String(edge.targetUid),
-      type: 'auto',
-      keyType: edge.keyType,
-      triggerKey: edge.triggerKey.length > 20
-        ? edge.triggerKey.substring(0, 17) + '...'
-        : edge.triggerKey,
-    },
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildManualEdge(link: ManualLinkData): any {
-  return {
-    group: 'edges',
-    data: {
-      id: `manual-${link.sourceUid}-${link.targetUid}`,
-      source: link.sourceUid,
-      target: link.targetUid,
-      type: 'manual',
-      triggerKey: link.label || 'manual',
-    },
-  };
-}
-
-function updateOrphanStatus(): void {
-  if (!cy) return;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.nodes().forEach((node: any) => {
-    const degree = node.degree(false);
-    node.data('orphan', degree === 0);
+function handleNodeRightClick(node: any, event: MouseEvent): void {
+  hideTooltip();
+  EventBus.emit('ls:context-menu', {
+    uid: parseInt(node.id),
+    bookName: currentBookName,
+    nodeData: node,
+    position: { x: event.clientX, y: event.clientY },
   });
 }
 
-function applyEdgeVisibility(): void {
-  const settings = getSettings();
-  toggleAutoEdges(settings.showAutoLinks);
-  toggleManualEdges(settings.showManualLinks);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleNodeHover(node: any, _prevNode: any): void {
+  // Clear pending tooltip
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer);
+    tooltipTimer = null;
+  }
+
+  if (!node) {
+    hideTooltip();
+    // Reset cursor
+    if (graphContainer) graphContainer.style.cursor = '';
+    return;
+  }
+
+  // Show pointer cursor
+  if (graphContainer) graphContainer.style.cursor = 'pointer';
+
+  // Show tooltip after brief delay
+  tooltipTimer = setTimeout(() => {
+    if (graph && node.x !== undefined) {
+      const screenCoords = graph.graph2ScreenCoords(node.x, node.y, node.z);
+      showTooltip(node, screenCoords);
+    }
+  }, 300);
 }
 
-// --- Tooltip helpers ---
+function handleBackgroundClick(): void {
+  hideTooltip();
+  if (selectedNodeId) {
+    selectedNodeId = null;
+    refreshNodeObjects();
+    EventBus.emit(STUDIO_EVENTS.NODE_DESELECTED);
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function showTooltip(nodeData: Record<string, any>, renderedPos: { x: number; y: number }): void {
+function handleNodeDragEnd(node: any): void {
+  // Pin the node where it was dropped
+  node.fx = node.x;
+  node.fy = node.y;
+  node.fz = node.z;
+  savePositions(currentBookName);
+}
+
+// --- Tooltip ---
+
+function showTooltip(nodeData: GraphNode, screenPos: { x: number; y: number }): void {
   const tooltip = document.getElementById('ls-tooltip');
   if (!tooltip) return;
 
@@ -468,17 +585,17 @@ function showTooltip(nodeData: Record<string, any>, renderedPos: { x: number; y:
   if (nodeData.disabled) badges.push('<span class="ls-tooltip-badge ls-tooltip-badge-disabled">Disabled</span>');
   if (nodeData.selective) badges.push('<span class="ls-tooltip-badge ls-tooltip-badge-selective">Selective</span>');
 
-  const keys = (nodeData.keys || []) as string[];
+  const keys = nodeData.keys || [];
   const keysPreview = keys.length > 0
     ? `<div class="ls-tooltip-keys"><strong>Keys:</strong> ${escapeHtml(keys.slice(0, 5).join(', '))}${keys.length > 5 ? ` +${keys.length - 5}` : ''}</div>`
     : '';
 
-  const content = (nodeData.content || '') as string;
+  const content = nodeData.content || '';
   const contentPreview = content.length > 0
     ? `<div class="ls-tooltip-content">${escapeHtml(content.substring(0, 200))}${content.length > 200 ? '...' : ''}</div>`
     : '';
 
-  const connCount = nodeData.connectionCount as number || 0;
+  const connCount = nodeData.connectionCount || 0;
 
   tooltip.innerHTML = `
     <div class="ls-tooltip-name">${escapeHtml(nodeData.comment || 'Unnamed Entry')}</div>
@@ -488,17 +605,18 @@ function showTooltip(nodeData: Record<string, any>, renderedPos: { x: number; y:
     <div class="ls-tooltip-meta">${connCount} connection${connCount !== 1 ? 's' : ''}</div>
   `;
 
+  // Position the tooltip near the node's screen coordinates
   const container = document.getElementById('ls-graph-container');
   if (!container) return;
   const containerRect = container.getBoundingClientRect();
 
-  let left = renderedPos.x + containerRect.left + 15;
-  let top = renderedPos.y + containerRect.top - 10;
+  let left = screenPos.x + containerRect.left + 15;
+  let top = screenPos.y + containerRect.top - 10;
 
   // Keep tooltip within viewport
   const tooltipWidth = 320;
   if (left + tooltipWidth > window.innerWidth) {
-    left = renderedPos.x + containerRect.left - tooltipWidth - 15;
+    left = screenPos.x + containerRect.left - tooltipWidth - 15;
   }
   if (top < 0) top = 10;
 
@@ -522,155 +640,50 @@ function escapeHtml(str: string): string {
   return div.innerHTML;
 }
 
-// --- Event setup ---
-
-function setupEvents(): void {
-  if (!cy) return;
-
-  // Node tap -> select and emit (stored as named handler for connect mode toggle)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  nodeSelectHandler = (evt: any) => {
-    const node = evt.target;
-    hideTooltip();
-    EventBus.emit(STUDIO_EVENTS.NODE_SELECTED, {
-      uid: parseInt(node.id()),
-      bookName: currentBookName,
-      nodeData: node.data(),
-    });
-  };
-  cy.on('tap', 'node', nodeSelectHandler);
-
-  // Tap on background -> deselect
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.on('tap', (evt: any) => {
-    if (evt.target === cy) {
-      hideTooltip();
-      EventBus.emit(STUDIO_EVENTS.NODE_DESELECTED);
-    }
-  });
-
-  // Mouse hover effects + tooltip
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.on('mouseover', 'node', (evt: any) => {
-    evt.target.addClass('ls-hover');
-    evt.target.connectedEdges().addClass('ls-hover');
-    // Show tooltip after brief delay
-    const nodeData = evt.target.data();
-    const renderedPos = evt.target.renderedPosition();
-    if (tooltipTimer) clearTimeout(tooltipTimer);
-    tooltipTimer = setTimeout(() => showTooltip(nodeData, renderedPos), 150);
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.on('mouseout', 'node', (evt: any) => {
-    evt.target.removeClass('ls-hover');
-    evt.target.connectedEdges().removeClass('ls-hover');
-    hideTooltip();
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.on('mouseover', 'edge', (evt: any) => {
-    evt.target.addClass('ls-hover');
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.on('mouseout', 'edge', (evt: any) => {
-    evt.target.removeClass('ls-hover');
-  });
-
-  // Right-click context menu
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.on('cxttap', 'node', (evt: any) => {
-    const node = evt.target;
-    const pos = evt.renderedPosition || evt.position;
-    hideTooltip();
-    EventBus.emit('ls:context-menu', {
-      uid: parseInt(node.id()),
-      bookName: currentBookName,
-      nodeData: node.data(),
-      position: { x: pos.x, y: pos.y },
-    });
-  });
-
-  // Save positions when nodes are dragged
-  cy.on('dragfree', 'node', () => {
-    savePositions(currentBookName);
-  });
-}
+// --- Position persistence ---
 
 function savePositions(bookName: string): void {
-  if (!cy || !bookName) return;
+  if (!bookName || graphNodes.length === 0) return;
 
   const settings = getSettings();
-  const positions: Record<string, { x: number; y: number }> = {};
+  const positions: Record<string, { x: number; y: number; z: number }> = {};
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.nodes().forEach((node: any) => {
-    const pos = node.position();
-    positions[node.id()] = { x: pos.x, y: pos.y };
-  });
+  for (const node of graphNodes) {
+    if (node.x !== undefined && node.y !== undefined && node.z !== undefined) {
+      positions[node.id] = { x: node.x, y: node.y, z: node.z };
+    }
+  }
 
   settings.savedPositions[bookName] = positions;
+  updateSettings({});
 }
 
-function restorePositions(bookName: string): boolean {
-  if (!cy || !bookName) return false;
+function restorePositions(bookName: string, nodes: GraphNode[]): boolean {
+  if (!bookName) return false;
 
   const settings = getSettings();
   const positions = settings.savedPositions[bookName];
   if (!positions) return false;
 
   let hasPositions = false;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cy.nodes().forEach((node: any) => {
-    const saved = positions[node.id()];
+  for (const node of nodes) {
+    const saved = positions[node.id] as { x: number; y: number; z?: number } | undefined;
     if (saved) {
-      node.position(saved);
+      node.x = saved.x;
+      node.y = saved.y;
+      node.z = saved.z ?? 0;
+      node.fx = saved.x;
+      node.fy = saved.y;
+      node.fz = saved.z ?? 0;
       hasPositions = true;
     }
-  });
-
-  if (hasPositions) {
-    cy.fit(undefined, 50);
   }
+
   return hasPositions;
 }
 
-/**
- * After force-directed layout, spread orphan nodes into a neat grid below the main cluster.
- */
-function spreadOrphanNodes(): void {
-  if (!cy) return;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const orphans = cy.nodes().filter((n: any) => n.degree(false) === 0);
-  if (orphans.length === 0) return;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const connected = cy.nodes().filter((n: any) => n.degree(false) > 0);
-
-  // Find the bounding box of connected nodes
-  let maxY = 0;
-  let centerX = 0;
-  if (connected.length > 0) {
-    const bb = connected.boundingBox();
-    maxY = bb.y2;
-    centerX = (bb.x1 + bb.x2) / 2;
+function zoomToFitAll(): void {
+  if (graph) {
+    graph.zoomToFit(400, 50);
   }
-
-  // Arrange orphans in a grid below the connected cluster
-  const cols = Math.max(1, Math.ceil(Math.sqrt(orphans.length * 1.5)));
-  const nodeWidth = 200;
-  const nodeHeight = 80;
-  const gridStartY = maxY + 150;
-  const gridStartX = centerX - (cols * nodeWidth) / 2;
-
-  orphans.forEach((node: unknown, i: number) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    (node as { position: (pos: { x: number; y: number }) => void }).position({
-      x: gridStartX + col * nodeWidth,
-      y: gridStartY + row * nodeHeight,
-    });
-  });
 }

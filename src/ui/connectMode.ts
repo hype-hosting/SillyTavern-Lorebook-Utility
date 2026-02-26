@@ -3,7 +3,10 @@
  */
 
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
-import { getGraph, disableNodeSelect, enableNodeSelect } from '../graph/graphManager';
+import {
+  disableNodeSelect, enableNodeSelect,
+  setConnectModeClickHandler, setNodeConnectSource,
+} from '../graph/graphManager';
 import { addManualLink } from '../data/manualLinks';
 import { getCurrentBookName } from './drawer';
 
@@ -64,15 +67,8 @@ function enterConnectMode(): void {
 
   updateStatus('Click a source node...');
 
-  // Bind connect-mode tap handler
-  const cy = getGraph();
-  if (cy) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cy.on('tap.connectMode', 'node', (evt: any) => {
-      const nodeId = evt.target.id();
-      handleNodeTap(nodeId);
-    });
-  }
+  // Register our click handler with graphManager
+  setConnectModeClickHandler(handleNodeTap);
 
   EventBus.emit(STUDIO_EVENTS.CONNECT_MODE_START, {});
 }
@@ -98,11 +94,8 @@ export function exitConnectMode(): void {
   const container = document.getElementById('ls-graph-container');
   if (container) container.style.cursor = '';
 
-  // Remove connect-mode tap handler
-  const cy = getGraph();
-  if (cy) {
-    cy.off('tap.connectMode', 'node');
-  }
+  // Unregister connect-mode click handler
+  setConnectModeClickHandler(null);
 
   // Hide status
   hideStatus();
@@ -150,26 +143,16 @@ function setSource(nodeId: string): void {
   clearSourceGlow();
   sourceNodeId = nodeId;
 
-  const cy = getGraph();
-  if (cy) {
-    const node = cy.getElementById(nodeId);
-    if (node.length > 0) {
-      node.addClass('ls-connect-source');
-    }
-  }
+  // Highlight the source node via graphManager
+  setNodeConnectSource(nodeId);
 
   updateStatus('Click a target node to connect...');
 }
 
 function clearSourceGlow(): void {
   if (!sourceNodeId) return;
-  const cy = getGraph();
-  if (cy) {
-    const node = cy.getElementById(sourceNodeId);
-    if (node.length > 0) {
-      node.removeClass('ls-connect-source');
-    }
-  }
+  // Clear the source highlight
+  setNodeConnectSource(null);
 }
 
 function updateStatus(text: string): void {

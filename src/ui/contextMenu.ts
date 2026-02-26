@@ -62,23 +62,17 @@ function showMenu(
     <button class="ls-context-menu-item" data-action="delete" style="color: var(--ls-danger);">Delete</button>
   `;
 
-  // Position the menu relative to the drawer
-  const container = document.getElementById('ls-graph-container');
-  const drawer = document.getElementById('ls-drawer');
-  if (!container || !drawer) return;
-  const containerRect = container.getBoundingClientRect();
-  const drawerRect = drawer.getBoundingClientRect();
+  // Position the menu (position is viewport coords from MouseEvent.clientX/Y)
+  let left = position.x;
+  let top = position.y;
 
-  let left = position.x + containerRect.left - drawerRect.left;
-  let top = position.y + containerRect.top - drawerRect.top;
-
-  // Keep within drawer bounds
+  // Keep within viewport bounds
   const menuWidth = 180;
   const menuHeight = 200;
-  if (left + menuWidth > drawerRect.width) {
+  if (left + menuWidth > window.innerWidth) {
     left -= menuWidth;
   }
-  if (top + menuHeight > drawerRect.height) {
+  if (top + menuHeight > window.innerHeight) {
     top -= menuHeight;
   }
 

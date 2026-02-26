@@ -8,7 +8,7 @@ import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import { getEntries, getWorldInfoBookNames, getActiveBookName, loadBookData } from '../data/lorebookData';
 import { detectRecursions, clearRecursionCache } from '../data/recursionDetector';
 import { getManualLinks } from '../data/manualLinks';
-import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges } from '../graph/graphManager';
+import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges, setViewMode, getViewMode } from '../graph/graphManager';
 import { LayoutName } from '../graph/layouts';
 import { initToolbarEvents } from './toolbar';
 import { initSidebar, openSidebar, closeSidebar } from './sidebar';
@@ -126,6 +126,15 @@ export function initDrawer(): void {
   // Add entry button
   document.getElementById('ls-btn-add-entry')?.addEventListener('click', () => {
     EventBus.emit('ls:create-entry-request', { bookName: currentBookName });
+  });
+
+  // View mode toggle
+  const viewModeBtn = document.getElementById('ls-btn-view-mode');
+  viewModeBtn?.addEventListener('click', () => {
+    const current = getViewMode();
+    const next = current === 'cards' ? 'sprites' : 'cards';
+    setViewMode(next);
+    if (viewModeBtn) viewModeBtn.textContent = next === 'cards' ? 'Cards' : 'Labels';
   });
 
   // Initialize sub-components
