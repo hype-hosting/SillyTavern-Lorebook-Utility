@@ -181,12 +181,38 @@
   overflow: hidden;
   flex-shrink: 0;
   z-index: 5;
+  position: relative;
 }
 
 .ls-sidebar-hidden {
   width: 0;
   border-left: none;
   box-shadow: none;
+}
+
+.ls-sidebar-hidden .ls-sidebar-resize-handle {
+  display: none;
+}
+
+.ls-sidebar-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.ls-sidebar-resize-handle:hover,
+.ls-sidebar-resize-handle.ls-dragging {
+  background: var(--ls-accent);
+}
+
+.ls-sidebar.ls-resizing {
+  transition: none;
 }
 
 .ls-sidebar-header {

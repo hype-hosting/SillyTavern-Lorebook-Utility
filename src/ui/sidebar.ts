@@ -11,6 +11,10 @@ import { getCurrentBookName } from './drawer';
 let selectedEntry: LorebookEntry | null = null;
 let originalEntry: LorebookEntry | null = null;
 
+// Resize state
+const SIDEBAR_MIN_WIDTH = 280;
+const SIDEBAR_MAX_WIDTH_RATIO = 0.6; // max 60% of the drawer width
+
 /**
  * Initialize sidebar events.
  */
@@ -43,6 +47,9 @@ export function initSidebar(): void {
 
   // Add manual link button
   document.getElementById('ls-btn-add-link')?.addEventListener('click', addLink);
+
+  // Sidebar resize handle
+  initResizeHandle();
 
   // Listen for create entry requests from toolbar
   EventBus.on('ls:create-entry-request', async (data: unknown) => {
@@ -292,6 +299,45 @@ function populateLinkTargets(uid: number, bookName: string): void {
     option.textContent = entry.comment || `Entry ${entry.uid}`;
     select.appendChild(option);
   }
+}
+
+// --- Resize handle ---
+
+function initResizeHandle(): void {
+  const handle = document.getElementById('ls-sidebar-resize-handle');
+  const sidebar = document.getElementById('ls-sidebar');
+  const drawer = document.getElementById('ls-drawer');
+  if (!handle || !sidebar || !drawer) return;
+
+  let startX = 0;
+  let startWidth = 0;
+
+  function onMouseMove(e: MouseEvent): void {
+    e.preventDefault();
+    const delta = startX - e.clientX;
+    const maxWidth = drawer!.clientWidth * SIDEBAR_MAX_WIDTH_RATIO;
+    const newWidth = Math.min(maxWidth, Math.max(SIDEBAR_MIN_WIDTH, startWidth + delta));
+    sidebar!.style.width = newWidth + 'px';
+    resizeGraph();
+  }
+
+  function onMouseUp(): void {
+    handle!.classList.remove('ls-dragging');
+    sidebar!.classList.remove('ls-resizing');
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    resizeGraph();
+  }
+
+  handle.addEventListener('mousedown', (e: MouseEvent) => {
+    e.preventDefault();
+    startX = e.clientX;
+    startWidth = sidebar.offsetWidth;
+    handle.classList.add('ls-dragging');
+    sidebar.classList.add('ls-resizing');
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
 }
 
 // --- DOM helpers ---
