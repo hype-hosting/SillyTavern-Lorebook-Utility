@@ -8,8 +8,9 @@ import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import { getEntries, getWorldInfoBookNames, getActiveBookName, loadBookData } from '../data/lorebookData';
 import { detectRecursions, clearRecursionCache } from '../data/recursionDetector';
 import { getManualLinks } from '../data/manualLinks';
-import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges, setViewMode, getViewMode } from '../graph/graphManager';
+import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges, setViewMode, getViewMode, setAutoOrbit, getAutoOrbit, getGraph } from '../graph/graphManager';
 import { LayoutName } from '../graph/layouts';
+import { getSettings, updateSettings, ThemeName } from '../utils/settings';
 import { initToolbarEvents } from './toolbar';
 import { initSidebar, openSidebar, closeSidebar } from './sidebar';
 import { initStatsPanel } from './statsPanel';
@@ -137,6 +138,34 @@ export function initDrawer(): void {
     setViewMode(next);
     if (viewModeBtn) viewModeBtn.textContent = next === 'cards' ? 'Cards' : 'Labels';
   });
+
+  // Auto-orbit toggle
+  const orbitBtn = document.getElementById('ls-btn-auto-orbit');
+  if (orbitBtn) {
+    // Restore saved state
+    const savedOrbit = getSettings().autoOrbit;
+    if (savedOrbit) orbitBtn.classList.add('active');
+    orbitBtn.addEventListener('click', () => {
+      const next = !getAutoOrbit();
+      setAutoOrbit(next);
+      updateSettings({ autoOrbit: next });
+      orbitBtn.classList.toggle('active', next);
+    });
+  }
+
+  // Theme selector
+  const themeSelector = document.getElementById('ls-theme-selector') as HTMLSelectElement | null;
+  if (themeSelector) {
+    // Restore saved theme
+    const savedTheme = getSettings().theme || 'midnight';
+    themeSelector.value = savedTheme;
+    applyTheme(savedTheme);
+    themeSelector.addEventListener('change', () => {
+      const theme = themeSelector.value as ThemeName;
+      applyTheme(theme);
+      updateSettings({ theme });
+    });
+  }
 
   // Initialize sub-components
   initToolbarEvents();
@@ -353,5 +382,32 @@ function updateStatusBar(text?: string, count?: string): void {
   if (count !== undefined) {
     const entryCount = document.getElementById('ls-entry-count');
     if (entryCount) entryCount.textContent = count;
+  }
+}
+
+// --- Theme support ---
+
+const THEME_BACKGROUNDS: Record<ThemeName, string> = {
+  midnight: '#13111c',
+  nebula: '#0f0a1a',
+  ember: '#161010',
+  arctic: '#0a1218',
+};
+
+function applyTheme(theme: ThemeName): void {
+  const drawer = document.getElementById('ls-drawer');
+  if (!drawer) return;
+
+  // "midnight" is the default — remove data-theme to use :root vars
+  if (theme === 'midnight') {
+    drawer.removeAttribute('data-theme');
+  } else {
+    drawer.setAttribute('data-theme', theme);
+  }
+
+  // Update the 3D graph background color (set programmatically by 3d-force-graph)
+  const graph = getGraph();
+  if (graph) {
+    graph.backgroundColor(THEME_BACKGROUNDS[theme] || THEME_BACKGROUNDS.midnight);
   }
 }

@@ -868,6 +868,43 @@
   flex-shrink: 0;
 }
 
+.ls-status-left {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.ls-branding {
+  font-weight: 600;
+  color: var(--ls-accent);
+  white-space: nowrap;
+}
+
+.ls-branding-by {
+  font-weight: 400;
+  color: var(--ls-text-muted);
+}
+
+.ls-branding-sep {
+  color: var(--ls-text-muted);
+  margin: 0 2px;
+}
+
+.ls-branding-version {
+  font-weight: 400;
+  color: var(--ls-text-secondary);
+  font-family: monospace;
+  font-size: 10px;
+}
+
+.ls-branding-divider {
+  width: 1px;
+  height: 10px;
+  background: var(--ls-border-light);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
 /* --- Connect Mode Status --- */
 .ls-connect-status {
   position: absolute;
@@ -882,4 +919,77 @@
   color: var(--ls-text-primary);
   z-index: 10;
   white-space: nowrap;
+}
+
+/* ============================================================
+   Visual Themes
+   ============================================================
+   "midnight" is the default (uses :root variables).
+   Each theme overrides the CSS custom properties on the drawer.
+   ============================================================ */
+
+/* --- Nebula: deep purple/magenta palette --- */
+.ls-drawer[data-theme="nebula"] {
+  --ls-bg-primary: #0f0a1a;
+  --ls-bg-secondary: #1a1128;
+  --ls-bg-tertiary: #241835;
+  --ls-bg-card: #1e1430;
+  --ls-bg-input: #130e1e;
+  --ls-text-primary: #e0d4f0;
+  --ls-text-secondary: #a896c4;
+  --ls-text-muted: #6b5a80;
+  --ls-accent: #c084fc;
+  --ls-accent-hover: #a855f7;
+  --ls-accent-soft: rgba(192, 132, 252, 0.15);
+  --ls-border: #2e2244;
+  --ls-border-light: #3d2f58;
+  --ls-node-enabled: #c084fc;
+  --ls-node-disabled: #6b7280;
+  --ls-node-selected: #f0abfc;
+  --ls-edge-auto: #a78bfa;
+  --ls-edge-manual: #f0abfc;
+}
+
+/* --- Ember: warm amber/copper palette --- */
+.ls-drawer[data-theme="ember"] {
+  --ls-bg-primary: #161010;
+  --ls-bg-secondary: #1e1614;
+  --ls-bg-tertiary: #2a1e1a;
+  --ls-bg-card: #221a16;
+  --ls-bg-input: #181010;
+  --ls-text-primary: #ede0d4;
+  --ls-text-secondary: #b8a08a;
+  --ls-text-muted: #7a6454;
+  --ls-accent: #f59e0b;
+  --ls-accent-hover: #d97706;
+  --ls-accent-soft: rgba(245, 158, 11, 0.15);
+  --ls-border: #362a22;
+  --ls-border-light: #4a3a2e;
+  --ls-node-enabled: #f59e0b;
+  --ls-node-disabled: #6b7280;
+  --ls-node-selected: #fbbf24;
+  --ls-edge-auto: #fb923c;
+  --ls-edge-manual: #f87171;
+}
+
+/* --- Arctic: cool blue/teal palette --- */
+.ls-drawer[data-theme="arctic"] {
+  --ls-bg-primary: #0a1218;
+  --ls-bg-secondary: #101c24;
+  --ls-bg-tertiary: #162430;
+  --ls-bg-card: #132028;
+  --ls-bg-input: #0c141a;
+  --ls-text-primary: #d4e8f0;
+  --ls-text-secondary: #8ab0c4;
+  --ls-text-muted: #4a7088;
+  --ls-accent: #22d3ee;
+  --ls-accent-hover: #06b6d4;
+  --ls-accent-soft: rgba(34, 211, 238, 0.15);
+  --ls-border: #1e3040;
+  --ls-border-light: #2a4050;
+  --ls-node-enabled: #22d3ee;
+  --ls-node-disabled: #6b7280;
+  --ls-node-selected: #67e8f9;
+  --ls-edge-auto: #38bdf8;
+  --ls-edge-manual: #a78bfa;
 }
