@@ -15,6 +15,7 @@ Built for botmakers and worldbuilders who think visually.
 - **Color-coded nodes** -- nodes inherit category colors, with support for per-entry color overrides, status indicators, pin stars, and notes badges
 - Directional arrow edges with labels showing the triggering keyword
 - Auto-detected links shown as straight blue lines; manual links as curved pink lines
+- **Auto-orbit** -- toggle slow idle rotation for a living, ambient feel when not interacting
 
 ### Organizational Suite
 - **Categories** -- create custom color-coded categories (e.g. Characters, Locations, Factions) with a built-in category manager. Node colors on the graph reflect their assigned category.
@@ -54,6 +55,14 @@ All organizational metadata is stored in extension settings only -- it never mod
 - **Most connected entries** (top 5) -- click to navigate
 - **Orphan entries** list -- click to navigate
 - **Health checks**: empty content warnings, missing keys, duplicate key detection
+
+### Visual Themes
+- **Midnight** (default) -- deep navy/purple palette with violet accents
+- **Nebula** -- rich purple/magenta palette with soft pink highlights
+- **Ember** -- warm amber/copper palette with golden accents
+- **Arctic** -- cool blue/teal palette with cyan highlights
+- Theme selection persists across sessions
+- Each theme re-skins the entire UI: toolbar, sidebar, status bar, tooltips, and 3D graph background
 
 ### 3D Layout Options
 - **Force-Directed 3D** -- default, organic force-simulated clustering in 3D space
@@ -136,7 +145,7 @@ The compiled output goes to `dist/index.js`.
 ```
 src/
   index.ts                 # Extension entry point
-  style.css                # UI stylesheet (dark theme)
+  style.css                # UI stylesheet (themes + dark base)
   templates/drawer.html    # Drawer HTML template
   data/
     lorebookData.ts        # SillyTavern World Info read/write

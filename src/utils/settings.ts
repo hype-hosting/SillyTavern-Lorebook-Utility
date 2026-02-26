@@ -4,6 +4,8 @@
 
 const MODULE_NAME = 'lorebookStudio';
 
+export type ThemeName = 'midnight' | 'nebula' | 'ember' | 'arctic';
+
 export interface LorebookStudioSettings {
   defaultLayout: string;
   showKeywordsOnNodes: boolean;
@@ -12,6 +14,8 @@ export interface LorebookStudioSettings {
   showEdgeLabels: boolean;
   showAutoLinks: boolean;
   showManualLinks: boolean;
+  theme: ThemeName;
+  autoOrbit: boolean;
   manualLinks: Record<string, ManualLinkData[]>;
   savedPositions: Record<string, Record<string, { x: number; y: number; z?: number }>>;
   studioData: Record<string, StudioData>;
@@ -54,6 +58,8 @@ const DEFAULT_SETTINGS: LorebookStudioSettings = {
   showEdgeLabels: true,
   showAutoLinks: true,
   showManualLinks: true,
+  theme: 'midnight',
+  autoOrbit: false,
   manualLinks: {},
   savedPositions: {},
   studioData: {},

@@ -55,6 +55,13 @@
             <span>Manual</span>
           </label>
         </div>
+        <button id="ls-btn-auto-orbit" class="ls-btn" title="Toggle slow auto-rotation">Orbit</button>
+        <select id="ls-theme-selector" class="ls-select ls-select-sm" title="Visual theme">
+          <option value="midnight">Midnight</option>
+          <option value="nebula">Nebula</option>
+          <option value="ember">Ember</option>
+          <option value="arctic">Arctic</option>
+        </select>
         <button id="ls-btn-view-mode" class="ls-btn" title="Toggle card/label view">Cards</button>
         <button id="ls-btn-stats" class="ls-btn" title="Statistics">Stats</button>
         <button id="ls-btn-connect" class="ls-btn" title="Connect two entries (click source then target)">Link</button>
@@ -65,7 +72,11 @@
 
     <!-- Status bar -->
     <div id="ls-status-bar" class="ls-status-bar">
-      <span id="ls-status-text">Select a lorebook to begin</span>
+      <span class="ls-status-left">
+        <span class="ls-branding">Lorebook Studio <span class="ls-branding-by">by</span> Hyperion <span class="ls-branding-sep">&mdash;</span> <span class="ls-branding-version">v2.1.0</span></span>
+        <span class="ls-branding-divider"></span>
+        <span id="ls-status-text">Select a lorebook to begin</span>
+      </span>
       <span id="ls-entry-count"></span>
     </div>
 

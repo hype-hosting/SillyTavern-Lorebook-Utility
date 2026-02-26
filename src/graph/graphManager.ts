@@ -10,7 +10,7 @@ import SpriteText from 'three-spritetext';
 import { LorebookEntry } from '../data/lorebookData';
 import { RecursionEdge } from '../data/recursionDetector';
 import { getEntryMeta, getCategoryById } from '../data/studioData';
-import { ManualLinkData, getSettings, updateSettings } from '../utils/settings';
+import { ManualLinkData, getSettings, updateSettings, ThemeName } from '../utils/settings';
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import {
   GraphNode, GraphLink, ViewMode,
@@ -48,6 +48,9 @@ let connectModeClickHandler: ((nodeId: string) => void) | null = null;
 
 // Tooltip state
 let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Auto-orbit state
+let autoOrbitEnabled = false;
 
 // --- Public API (same exports as the old Cytoscape-based graphManager) ---
 
@@ -93,7 +96,7 @@ export function initGraph(
     .graphData({ nodes: graphNodes, links: graphLinks })
     .nodeId('id')
     .nodeLabel('')  // We handle tooltips ourselves
-    .backgroundColor('#13111c')
+    .backgroundColor(getThemeBackground(settings.theme))
     .width(container.clientWidth)
     .height(container.clientHeight)
     .showNavInfo(false)
@@ -141,6 +144,14 @@ export function initGraph(
     .onBackgroundRightClick(handleBackgroundClick)
     .enableNodeDrag(true)
     .enableNavigationControls(true);
+
+  // Configure auto-orbit from settings
+  autoOrbitEnabled = settings.autoOrbit;
+  const controls = graph.controls();
+  if (controls) {
+    controls.autoRotate = autoOrbitEnabled;
+    controls.autoRotateSpeed = 0.4;
+  }
 
   // Configure forces based on node count
   configureForces(graph, graphNodes.length);
@@ -436,6 +447,27 @@ export function getViewMode(): ViewMode {
   return currentViewMode;
 }
 
+/**
+ * Enable or disable auto-orbit (slow idle rotation).
+ */
+export function setAutoOrbit(enabled: boolean): void {
+  autoOrbitEnabled = enabled;
+  if (graph) {
+    const controls = graph.controls();
+    if (controls) {
+      controls.autoRotate = enabled;
+      controls.autoRotateSpeed = 0.4;
+    }
+  }
+}
+
+/**
+ * Get the current auto-orbit state.
+ */
+export function getAutoOrbit(): boolean {
+  return autoOrbitEnabled;
+}
+
 // --- Internal helpers ---
 
 function preventContextMenu(e: Event): void {
@@ -716,6 +748,15 @@ function restorePositions(bookName: string, nodes: GraphNode[]): boolean {
   }
 
   return hasPositions;
+}
+
+function getThemeBackground(theme?: ThemeName | string): string {
+  switch (theme) {
+    case 'nebula': return '#0f0a1a';
+    case 'ember': return '#161010';
+    case 'arctic': return '#0a1218';
+    default: return '#13111c';
+  }
 }
 
 function zoomToFitAll(): void {
