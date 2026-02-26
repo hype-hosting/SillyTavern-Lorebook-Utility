@@ -13,7 +13,7 @@ export interface LorebookStudioSettings {
   showAutoLinks: boolean;
   showManualLinks: boolean;
   manualLinks: Record<string, ManualLinkData[]>;
-  savedPositions: Record<string, Record<string, { x: number; y: number }>>;
+  savedPositions: Record<string, Record<string, { x: number; y: number; z?: number }>>;
 }
 
 export interface ManualLinkData {
@@ -24,7 +24,7 @@ export interface ManualLinkData {
 }
 
 const DEFAULT_SETTINGS: LorebookStudioSettings = {
-  defaultLayout: 'cose',
+  defaultLayout: 'force',
   showKeywordsOnNodes: true,
   showContentPreview: false,
   autoRefresh: true,
