@@ -416,8 +416,10 @@ function initResizeHandle(): void {
 
   let startX = 0;
   let startWidth = 0;
+  let isDragging = false;
 
-  function onMouseMove(e: MouseEvent): void {
+  function onPointerMove(e: PointerEvent): void {
+    if (!isDragging) return;
     e.preventDefault();
     const delta = startX - e.clientX;
     const maxWidth = drawer!.clientWidth * SIDEBAR_MAX_WIDTH_RATIO;
@@ -426,23 +428,37 @@ function initResizeHandle(): void {
     resizeGraph();
   }
 
-  function onMouseUp(): void {
+  function stopDrag(): void {
+    if (!isDragging) return;
+    isDragging = false;
     handle!.classList.remove('ls-dragging');
     sidebar!.classList.remove('ls-resizing');
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
+    handle!.removeEventListener('pointermove', onPointerMove);
+    handle!.removeEventListener('pointerup', onPointerUp);
+    handle!.removeEventListener('pointercancel', onPointerUp);
+    try { handle!.releasePointerCapture(0); } catch { /* already released */ }
     resizeGraph();
   }
 
-  handle.addEventListener('mousedown', (e: MouseEvent) => {
+  function onPointerUp(): void {
+    stopDrag();
+  }
+
+  handle.addEventListener('pointerdown', (e: PointerEvent) => {
     e.preventDefault();
+    isDragging = true;
     startX = e.clientX;
     startWidth = sidebar.offsetWidth;
     handle.classList.add('ls-dragging');
     sidebar.classList.add('ls-resizing');
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    handle.setPointerCapture(e.pointerId);
+    handle.addEventListener('pointermove', onPointerMove);
+    handle.addEventListener('pointerup', onPointerUp);
+    handle.addEventListener('pointercancel', onPointerUp);
   });
+
+  // Safety: if window loses focus, end any active drag
+  window.addEventListener('blur', stopDrag);
 }
 
 // --- DOM helpers ---
