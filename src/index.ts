@@ -5,17 +5,17 @@
  * Presents lorebook entries as draggable card-style nodes with
  * connection lines showing recursion relationships.
  *
- * @version 1.0.0
+ * @version 2.2.0
  * @author Hyperion
  * @license GPL-3.0
  */
 
 import './style.css';
 import { getSettings, getDefaultSettings, getModuleName } from './utils/settings';
-import { onSTEvent, removeAllHandlers } from './utils/events';
+import { onSTEvent } from './utils/events';
 import { clearCache, isSelfSaving } from './data/lorebookData';
 import { clearRecursionCache } from './data/recursionDetector';
-import { initDrawer, injectTriggerButton, openDrawer, isDrawerOpen } from './ui/drawer';
+import { initDrawer, injectTriggerButton, isDrawerOpen } from './ui/drawer';
 
 /**
  * Extension initialization.

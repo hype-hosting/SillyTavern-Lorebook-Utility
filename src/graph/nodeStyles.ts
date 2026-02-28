@@ -68,14 +68,6 @@ const HIGHLIGHTED_BORDER = '#a78bfa';
 const HIGHLIGHTED_TEXT = '#e0d7ff';
 const CONNECT_SOURCE_BORDER = '#d4a0c0';
 
-// Status dot colors
-const STATUS_COLORS: Record<string, string> = {
-  'draft': '#9ca3af',
-  'in-progress': '#60a5fa',
-  'review': '#fbbf24',
-  'complete': '#4ade80',
-};
-
 /**
  * Darken a hex color by mixing it toward black.
  */

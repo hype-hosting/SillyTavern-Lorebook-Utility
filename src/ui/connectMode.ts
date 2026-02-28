@@ -20,11 +20,13 @@ export function initConnectMode(): void {
   // Link button in toolbar
   document.getElementById('ls-btn-connect')?.addEventListener('click', toggleConnectMode);
 
-  // Listen for context menu "Connect To..." action
+  // Listen for context menu "Connect To..." action (with a pre-set source node)
   EventBus.on(STUDIO_EVENTS.CONNECT_MODE_START, (data: unknown) => {
-    const { sourceUid } = data as { sourceUid: number };
+    const { sourceUid } = (data || {}) as { sourceUid?: number };
+    // Guard: only react if a sourceUid was provided (avoids self-trigger
+    // from enterConnectMode's own emission which sends an empty object)
+    if (sourceUid === undefined) return;
     enterConnectMode();
-    // Pre-set the source node
     setSource(String(sourceUid));
   });
 

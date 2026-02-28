@@ -10,6 +10,7 @@ import {
 import { EntryMeta, EntryStatus } from '../utils/settings';
 import { focusNode, resizeGraph } from '../graph/graphManager';
 import { getCurrentBookName } from './drawer';
+import { escapeHtml } from '../utils/domHelpers';
 
 let selectedEntry: LorebookEntry | null = null;
 let originalEntry: LorebookEntry | null = null;
@@ -509,10 +510,4 @@ function getNullableNumber(id: string): number | null {
   if (!el || el.value === '') return null;
   const num = parseInt(el.value);
   return isNaN(num) ? null : num;
-}
-
-function escapeHtml(str: string): string {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }

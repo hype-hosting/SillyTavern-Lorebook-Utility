@@ -8,7 +8,7 @@ import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import { getEntries, getWorldInfoBookNames, getActiveBookName, loadBookData } from '../data/lorebookData';
 import { detectRecursions, clearRecursionCache } from '../data/recursionDetector';
 import { getManualLinks } from '../data/manualLinks';
-import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges, setViewMode, getViewMode, setAutoOrbit, getAutoOrbit, getGraph, resizeGraph, resetView } from '../graph/graphManager';
+import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges, setViewMode, getViewMode, setAutoOrbit, getAutoOrbit, getGraph, resizeGraph, resetView, getSelectedNodeUid, focusNode } from '../graph/graphManager';
 import { LayoutName } from '../graph/layouts';
 import { getSettings, updateSettings, ThemeName } from '../utils/settings';
 import { initToolbarEvents } from './toolbar';
@@ -17,9 +17,7 @@ import { initStatsPanel } from './statsPanel';
 import { initContextMenu } from './contextMenu';
 import { initCategoryManager } from './categoryManager';
 import { initConnectMode, exitConnectMode, isConnectModeActive } from './connectMode';
-import { getSelectedNodeUid } from '../graph/graphManager';
 import { deleteEntryById, duplicateEntryById } from '../features/entryCrud';
-import { focusNode } from '../graph/graphManager';
 import { getEntryMeta, getCategoryById } from '../data/studioData';
 
 let isOpen = false;
@@ -218,8 +216,8 @@ export function initDrawer(): void {
 
   // Listen for node selection to highlight in entry list
   EventBus.on(STUDIO_EVENTS.NODE_SELECTED, (data: unknown) => {
-    const uid = (data as { uid: string })?.uid;
-    if (uid) updateEntryListSelection(uid);
+    const uid = (data as { uid: number })?.uid;
+    if (uid !== undefined && uid !== null) updateEntryListSelection(String(uid));
   });
   EventBus.on(STUDIO_EVENTS.NODE_DESELECTED, () => {
     updateEntryListSelection(null);

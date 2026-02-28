@@ -254,9 +254,8 @@ export async function createEntry(bookName: string): Promise<LorebookEntry | nul
     }
 
     // Calculate next UID
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existingUids = Object.values(loadedData.entries).map(
-      (e: any) => (e as WorldInfoEntry).uid,
+      (e: unknown) => (e as WorldInfoEntry).uid,
     );
     const maxUid = existingUids.length > 0 ? Math.max(...existingUids) : 0;
     const newUid = maxUid + 1;

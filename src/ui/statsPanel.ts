@@ -9,6 +9,7 @@ import { getManualLinks } from '../data/manualLinks';
 import { getCategories, getEntryMeta, getAllTags } from '../data/studioData';
 import { getCurrentBookName } from './drawer';
 import { focusNode } from '../graph/graphManager';
+import { escapeHtml } from '../utils/domHelpers';
 
 /**
  * Initialize stats panel events.
@@ -291,10 +292,4 @@ function computeAndRender(): void {
       }
     });
   });
-}
-
-function escapeHtml(str: string): string {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }

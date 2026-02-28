@@ -22,6 +22,7 @@ import {
   setAutoLinksVisible, setManualLinksVisible, setDimmedLinks,
 } from './edgeStyles';
 import { configureForces, applyLayout, LayoutName } from './layouts';
+import { escapeHtml } from '../utils/domHelpers';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let graph: any = null;
@@ -828,12 +829,6 @@ function hideTooltip(): void {
   }
   const tooltip = document.getElementById('ls-tooltip');
   tooltip?.classList.add('ls-tooltip-hidden');
-}
-
-function escapeHtml(str: string): string {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }
 
 // --- Position persistence ---
