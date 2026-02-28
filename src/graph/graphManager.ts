@@ -368,11 +368,16 @@ export function resetView(): void {
   delete settings.savedPositions[currentBookName];
   updateSettings({});
 
-  // Unpin all nodes (clear fixed positions)
+  // Unpin all nodes and reset any NaN/corrupt positions
   for (const node of graphNodes) {
     node.fx = undefined;
     node.fy = undefined;
     node.fz = undefined;
+    // Force valid initial positions so the simulation can work
+    // (NaN values poison the entire force calculation)
+    if (!isFinite(node.x ?? NaN)) node.x = (Math.random() - 0.5) * 100;
+    if (!isFinite(node.y ?? NaN)) node.y = (Math.random() - 0.5) * 100;
+    if (!isFinite(node.z ?? NaN)) node.z = (Math.random() - 0.5) * 100;
   }
 
   // Re-enable simulation and run sphere layout for a clean spread
