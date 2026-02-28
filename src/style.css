@@ -373,6 +373,7 @@
   flex: 1;
   min-width: 0;
   position: relative;
+  overflow: hidden;
   background:
     radial-gradient(ellipse at 30% 20%, rgba(124, 107, 222, 0.04) 0%, transparent 60%),
     radial-gradient(ellipse at 70% 80%, rgba(212, 160, 192, 0.03) 0%, transparent 60%),
@@ -404,7 +405,8 @@
 .ls-sidebar-inner {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background: var(--ls-bg-secondary);
   border-radius: 16px;
   margin: 8px;
