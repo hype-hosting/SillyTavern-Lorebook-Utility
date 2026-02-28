@@ -7,7 +7,7 @@
  *
  * @version 2.2.0
  * @author Hyperion
- * @license GPL-3.0
+ * @license AGPL-3.0
  */
 
 import './style.css';

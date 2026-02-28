@@ -4,6 +4,7 @@
   "version": "2.2.0",
   "type": "module",
   "description": "Visual node-graph lorebook editor for SillyTavern",
+  "license": "AGPL-3.0",
   "scripts": {
     "build": "webpack --mode production",
     "build:dev": "webpack --mode development",
