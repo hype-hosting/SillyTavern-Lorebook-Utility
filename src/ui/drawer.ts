@@ -8,7 +8,7 @@ import { EventBus, STUDIO_EVENTS } from '../utils/events';
 import { getEntries, getWorldInfoBookNames, getActiveBookName, loadBookData } from '../data/lorebookData';
 import { detectRecursions, clearRecursionCache } from '../data/recursionDetector';
 import { getManualLinks } from '../data/manualLinks';
-import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges, setViewMode, getViewMode, setAutoOrbit, getAutoOrbit, getGraph, resizeGraph } from '../graph/graphManager';
+import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoomOut, toggleAutoEdges, toggleManualEdges, setViewMode, getViewMode, setAutoOrbit, getAutoOrbit, getGraph, resizeGraph, resetView } from '../graph/graphManager';
 import { LayoutName } from '../graph/layouts';
 import { getSettings, updateSettings, ThemeName } from '../utils/settings';
 import { initToolbarEvents } from './toolbar';
@@ -116,6 +116,11 @@ export function initDrawer(): void {
   document.getElementById('ls-zoom-in')?.addEventListener('click', zoomIn);
   document.getElementById('ls-zoom-out')?.addEventListener('click', zoomOut);
   document.getElementById('ls-zoom-fit')?.addEventListener('click', fitGraph);
+
+  // Reset view
+  document.getElementById('ls-btn-reset-view')?.addEventListener('click', () => {
+    resetView();
+  });
 
   // Link visibility toggles
   const autoToggle = document.getElementById('ls-toggle-auto-links') as HTMLInputElement | null;

@@ -357,6 +357,35 @@ export function runLayout(layoutName: LayoutName): void {
 }
 
 /**
+ * Reset the view: clear all saved positions, unpin nodes, and run a fresh layout.
+ * Does NOT clear studio metadata (categories, colors, tags, etc.).
+ */
+export function resetView(): void {
+  if (!graph || !currentBookName) return;
+
+  // Clear saved positions from settings
+  const settings = getSettings();
+  delete settings.savedPositions[currentBookName];
+  updateSettings({});
+
+  // Unpin all nodes (clear fixed positions)
+  for (const node of graphNodes) {
+    node.fx = undefined;
+    node.fy = undefined;
+    node.fz = undefined;
+  }
+
+  // Re-enable simulation and run sphere layout for a clean spread
+  graph.cooldownTime(Infinity);
+  applyLayout(graph, 'sphere', graphNodes);
+
+  // Zoom to fit after layout settles
+  setTimeout(() => {
+    if (graph) zoomToFitAll();
+  }, 500);
+}
+
+/**
  * Fit all nodes in view.
  */
 export function fitGraph(): void {
@@ -798,13 +827,19 @@ function savePositions(bookName: string): void {
   const positions: Record<string, { x: number; y: number; z: number }> = {};
 
   for (const node of graphNodes) {
-    if (node.x !== undefined && node.y !== undefined && node.z !== undefined) {
+    if (
+      node.x !== undefined && node.y !== undefined && node.z !== undefined &&
+      isFinite(node.x) && isFinite(node.y) && isFinite(node.z)
+    ) {
       positions[node.id] = { x: node.x, y: node.y, z: node.z };
     }
   }
 
-  settings.savedPositions[bookName] = positions;
-  updateSettings({});
+  // Only save if we got at least some valid positions
+  if (Object.keys(positions).length > 0) {
+    settings.savedPositions[bookName] = positions;
+    updateSettings({});
+  }
 }
 
 function restorePositions(bookName: string, nodes: GraphNode[]): boolean {
@@ -817,7 +852,7 @@ function restorePositions(bookName: string, nodes: GraphNode[]): boolean {
   let hasPositions = false;
   for (const node of nodes) {
     const saved = positions[node.id] as { x: number; y: number; z?: number } | undefined;
-    if (saved) {
+    if (saved && isFinite(saved.x) && isFinite(saved.y) && isFinite(saved.z ?? 0)) {
       node.x = saved.x;
       node.y = saved.y;
       node.z = saved.z ?? 0;
