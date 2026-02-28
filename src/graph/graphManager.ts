@@ -124,10 +124,10 @@ export function initGraph(
   graphNodes = entries.map((entry) =>
     buildNode(entry, recursionEdges, manualLinks, settings.showKeywordsOnNodes),
   );
-  graphLinks = [
+  graphLinks = filterValidLinks([
     ...recursionEdges.map((edge) => buildAutoLink(edge)),
     ...manualLinks.map((link) => buildManualLink(link)),
-  ];
+  ], graphNodes);
 
   // Apply edge visibility settings
   setAutoLinksVisible(settings.showAutoLinks);
@@ -315,10 +315,10 @@ export function refreshGraph(
     return node;
   });
 
-  graphLinks = [
+  graphLinks = filterValidLinks([
     ...recursionEdges.map((edge) => buildAutoLink(edge)),
     ...manualLinks.map((link) => buildManualLink(link)),
-  ];
+  ], graphNodes);
 
   // Restore selection BEFORE graphData so the nodeThreeObject callback
   // uses the correct selectedNodeId (avoids a redundant refreshNodeObjects call).
@@ -653,6 +653,19 @@ function buildManualLink(link: ManualLinkData): GraphLink {
     type: 'manual',
     triggerKey: link.label || 'manual',
   };
+}
+
+/**
+ * Filter out links where source or target doesn't exist in the node set.
+ * Prevents d3-force "node not found" crashes from stale manual links or bad data.
+ */
+function filterValidLinks(links: GraphLink[], nodes: GraphNode[]): GraphLink[] {
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  return links.filter((link) => {
+    const srcId = typeof link.source === 'string' ? link.source : link.source?.id;
+    const tgtId = typeof link.target === 'string' ? link.target : link.target?.id;
+    return srcId && tgtId && nodeIds.has(srcId) && nodeIds.has(tgtId);
+  });
 }
 
 function createNodeObject(node: GraphNode): unknown {
