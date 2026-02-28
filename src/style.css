@@ -416,14 +416,15 @@
 
 .ls-sidebar-resize-handle {
   position: absolute;
-  left: 0;
+  left: -3px;
   top: 0;
-  width: 5px;
+  width: 10px;
   height: 100%;
   cursor: col-resize;
-  z-index: 10;
+  z-index: 20;
   background: transparent;
   transition: background 0.15s;
+  touch-action: none;
 }
 
 .ls-sidebar-resize-handle:hover,
@@ -1120,6 +1121,19 @@
   color: var(--ls-text-secondary);
   font-family: monospace;
   font-size: 10px;
+}
+
+.ls-kofi-link {
+  color: var(--ls-text-muted);
+  text-decoration: none;
+  font-size: 10px;
+  margin-left: 8px;
+  transition: color 0.2s;
+  line-height: 1;
+}
+
+.ls-kofi-link:hover {
+  color: #e05278;
 }
 
 .ls-branding-divider {

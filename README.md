@@ -73,7 +73,10 @@ All organizational metadata is stored in extension settings only -- it never mod
 - **Node positions are saved** per lorebook and persist across sessions (drag to pin)
 
 ### Seamless Integration
-- Full-page **drawer UI** slides in from the right (~95% viewport width)
+- Full-viewport **drawer UI** with rounded corners and fade/scale animation
+- **Vertical icon toolbar** on the left with popover controls for a clean, minimal layout
+- **Collapsible entry list panel** for quick navigation between entries
+- **Card-style editing sidebar** with rounded corners and shadow
 - One-click launch from SillyTavern's World Info panel
 - Close with ESC key, backdrop click, or the close button
 - Auto-refreshes when lorebook data changes in SillyTavern
@@ -87,7 +90,7 @@ All organizational metadata is stored in extension settings only -- it never mod
 3. Click **Install Extension**
 4. Paste this URL:
    ```
-   https://github.com/hype-hosting/SillyTavern-Lorebook-Utility
+   https://github.com/hype-hosting/SillyTavern-Lorebook-Studio
    ```
 5. Click Install and reload SillyTavern
 
@@ -104,7 +107,7 @@ The extension comes pre-built -- no additional setup required.
 7. **Click a node** to open the editing sidebar
 8. **Drag nodes** to rearrange -- positions are saved automatically
 9. Use the **Cards/Labels** button to toggle between view modes
-10. Use the **toolbar** to search, filter by category/status/pins, switch layouts, or toggle link visibility
+10. Use the **left toolbar icons** to search, filter by category/status/pins, switch layouts, or toggle link visibility
 11. Click **Stats** to see category breakdowns, tag usage, connection analysis, and health checks
 12. In the sidebar, scroll to the **Studio** section to manage categories, tags, status, pins, notes, and colors
 
@@ -114,8 +117,8 @@ If you want to modify the extension or contribute:
 
 ```bash
 # Clone the repo
-git clone https://github.com/hype-hosting/SillyTavern-Lorebook-Utility.git
-cd SillyTavern-Lorebook-Utility
+git clone https://github.com/hype-hosting/SillyTavern-Lorebook-Studio.git
+cd SillyTavern-Lorebook-Studio
 
 # Install dependencies
 npm install
