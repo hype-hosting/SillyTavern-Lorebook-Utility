@@ -77,7 +77,11 @@ export function openSidebar(): void {
  */
 export function closeSidebar(): void {
   const sidebar = document.getElementById('ls-sidebar');
-  sidebar?.classList.add('ls-sidebar-hidden');
+  if (sidebar) {
+    // Clear any inline width from resize dragging so the CSS class can take effect
+    sidebar.style.width = '';
+    sidebar.classList.add('ls-sidebar-hidden');
+  }
   selectedEntry = null;
   originalEntry = null;
   currentTags = [];
@@ -428,37 +432,33 @@ function initResizeHandle(): void {
     resizeGraph();
   }
 
-  function stopDrag(): void {
+  function onPointerUp(): void {
     if (!isDragging) return;
     isDragging = false;
     handle!.classList.remove('ls-dragging');
     sidebar!.classList.remove('ls-resizing');
-    handle!.removeEventListener('pointermove', onPointerMove);
-    handle!.removeEventListener('pointerup', onPointerUp);
-    handle!.removeEventListener('pointercancel', onPointerUp);
-    try { handle!.releasePointerCapture(0); } catch { /* already released */ }
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
     resizeGraph();
-  }
-
-  function onPointerUp(): void {
-    stopDrag();
   }
 
   handle.addEventListener('pointerdown', (e: PointerEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     isDragging = true;
     startX = e.clientX;
     startWidth = sidebar.offsetWidth;
     handle.classList.add('ls-dragging');
     sidebar.classList.add('ls-resizing');
-    handle.setPointerCapture(e.pointerId);
-    handle.addEventListener('pointermove', onPointerMove);
-    handle.addEventListener('pointerup', onPointerUp);
-    handle.addEventListener('pointercancel', onPointerUp);
+    // Use document-level listeners so events fire even if pointer drifts off handle
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
   });
 
-  // Safety: if window loses focus, end any active drag
-  window.addEventListener('blur', stopDrag);
+  // Safety: if window loses focus during drag, end it
+  window.addEventListener('blur', () => {
+    if (isDragging) onPointerUp();
+  });
 }
 
 // --- DOM helpers ---
