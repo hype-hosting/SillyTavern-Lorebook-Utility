@@ -1,72 +1,399 @@
 <div id="ls-drawer-overlay" class="ls-overlay">
   <div id="ls-drawer" class="ls-drawer">
-    <!-- Toolbar -->
-    <div id="ls-toolbar" class="ls-toolbar">
-      <div class="ls-toolbar-left">
-        <span class="ls-toolbar-title">Lorebook Studio</span>
-        <select id="ls-book-selector" class="ls-select" title="Select lorebook">
-          <option value="">-- Select Lorebook --</option>
-        </select>
+    <!-- Main layout: left toolbar + content area -->
+    <div class="ls-main-layout">
+      <!-- Left Toolbar -->
+      <div class="ls-left-toolbar">
+        <!-- Brand -->
+        <div class="ls-ltb-brand" title="Lorebook Studio">LS</div>
+
+        <!-- Book selector -->
+        <div class="ls-ltb-item">
+          <button class="ls-ltb-btn" data-popover="ls-pop-book" title="Select Lorebook">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </button>
+          <div id="ls-pop-book" class="ls-ltb-popover ls-hidden">
+            <div class="ls-pop-title">Lorebook</div>
+            <select id="ls-book-selector" class="ls-select">
+              <option value="">-- Select Lorebook --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Entry list toggle -->
+        <button id="ls-btn-entry-list" class="ls-ltb-btn" title="Toggle entry list">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+
+        <div class="ls-ltb-separator"></div>
+
+        <!-- Search -->
+        <div class="ls-ltb-item">
+          <button class="ls-ltb-btn" data-popover="ls-pop-search" title="Search entries">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <div id="ls-pop-search" class="ls-ltb-popover ls-hidden">
+            <div class="ls-pop-title">Search</div>
+            <div class="ls-search-wrapper">
+              <input type="text" id="ls-search-input" class="ls-input" placeholder="Search entries..." />
+              <button id="ls-search-clear" class="ls-pop-clear-btn" title="Clear search">&times;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="ls-ltb-item">
+          <button class="ls-ltb-btn" data-popover="ls-pop-filters" title="Filter entries">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          </button>
+          <div id="ls-pop-filters" class="ls-ltb-popover ls-hidden">
+            <div class="ls-pop-title">Filters</div>
+            <div class="ls-pop-field">
+              <label class="ls-pop-label">Category</label>
+              <select id="ls-filter-category" class="ls-select ls-select-sm">
+                <option value="">All Categories</option>
+                <option value="__uncategorized__">Uncategorized</option>
+              </select>
+            </div>
+            <div class="ls-pop-field">
+              <label class="ls-pop-label">Status</label>
+              <select id="ls-filter-status" class="ls-select ls-select-sm">
+                <option value="">All Statuses</option>
+                <option value="draft">Draft</option>
+                <option value="in-progress">In Progress</option>
+                <option value="review">Review</option>
+                <option value="complete">Complete</option>
+              </select>
+            </div>
+            <div class="ls-pop-btn-row">
+              <button id="ls-filter-pinned" class="ls-btn ls-btn-sm" title="Show pinned entries">Pinned</button>
+              <button id="ls-filter-orphans" class="ls-btn ls-btn-sm" title="Show orphan entries">Orphans</button>
+              <button id="ls-filter-disabled" class="ls-btn ls-btn-sm" title="Show disabled entries">Disabled</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ls-ltb-separator"></div>
+
+        <!-- Layout -->
+        <div class="ls-ltb-item">
+          <button class="ls-ltb-btn" data-popover="ls-pop-layout" title="Graph layout">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+          <div id="ls-pop-layout" class="ls-ltb-popover ls-hidden">
+            <div class="ls-pop-title">Layout</div>
+            <select id="ls-layout-selector" class="ls-select">
+              <option value="force">Force-Directed 3D</option>
+              <option value="grid">3D Grid</option>
+              <option value="sphere">Sphere</option>
+              <option value="helix">Helix</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Zoom -->
+        <button id="ls-zoom-in" class="ls-ltb-btn" title="Zoom in">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button id="ls-zoom-out" class="ls-ltb-btn" title="Zoom out">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button id="ls-zoom-fit" class="ls-ltb-btn" title="Fit all">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+
+        <!-- Link visibility -->
+        <div class="ls-ltb-item">
+          <button class="ls-ltb-btn" data-popover="ls-pop-links" title="Link visibility">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </button>
+          <div id="ls-pop-links" class="ls-ltb-popover ls-hidden">
+            <div class="ls-pop-title">Links</div>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-toggle-auto-links" checked />
+              <span>Auto-detected</span>
+            </label>
+            <label class="ls-toggle">
+              <input type="checkbox" id="ls-toggle-manual-links" checked />
+              <span>Manual</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Orbit -->
+        <button id="ls-btn-auto-orbit" class="ls-ltb-btn" title="Toggle auto-orbit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 2a10 10 0 0 0 0 20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+        </button>
+
+        <!-- View mode -->
+        <button id="ls-btn-view-mode" class="ls-ltb-btn" title="Toggle card/label view">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        </button>
+
+        <div class="ls-ltb-separator"></div>
+
+        <!-- Stats -->
+        <button id="ls-btn-stats" class="ls-ltb-btn" title="Statistics">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </button>
+
+        <!-- Connect / Link -->
+        <button id="ls-btn-connect" class="ls-ltb-btn" title="Connect two entries">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>
+        </button>
+
+        <!-- Add entry -->
+        <button id="ls-btn-add-entry" class="ls-ltb-btn ls-ltb-btn-accent" title="Add new entry">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+
+        <div class="ls-ltb-spacer"></div>
+
+        <!-- Theme -->
+        <div class="ls-ltb-item">
+          <button class="ls-ltb-btn" data-popover="ls-pop-theme" title="Visual theme">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+          <div id="ls-pop-theme" class="ls-ltb-popover ls-hidden">
+            <div class="ls-pop-title">Theme</div>
+            <select id="ls-theme-selector" class="ls-select ls-select-sm">
+              <option value="midnight">Midnight</option>
+              <option value="nebula">Nebula</option>
+              <option value="ember">Ember</option>
+              <option value="arctic">Arctic</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Close -->
+        <button id="ls-btn-close" class="ls-ltb-btn" title="Close Lorebook Studio">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-      <div class="ls-toolbar-center">
-        <div class="ls-search-wrapper">
-          <input type="text" id="ls-search-input" class="ls-input" placeholder="Search entries..." />
-          <button id="ls-search-clear" class="ls-btn ls-btn-icon" title="Clear search">&times;</button>
+
+      <!-- Entry List Panel (hidden by default) -->
+      <div id="ls-entry-list-panel" class="ls-entry-list-panel ls-hidden">
+        <div class="ls-entry-list-header">
+          <span class="ls-entry-list-title">Entries</span>
+          <span id="ls-entry-list-count" class="ls-entry-list-count">0</span>
         </div>
-        <div class="ls-toolbar-filters">
-          <select id="ls-filter-category" class="ls-select ls-select-sm" title="Filter by category">
-            <option value="">All Categories</option>
-            <option value="__uncategorized__">Uncategorized</option>
-          </select>
-          <select id="ls-filter-status" class="ls-select ls-select-sm" title="Filter by status">
-            <option value="">All Statuses</option>
-            <option value="draft">Draft</option>
-            <option value="in-progress">In Progress</option>
-            <option value="review">Review</option>
-            <option value="complete">Complete</option>
-          </select>
-          <button id="ls-filter-pinned" class="ls-btn ls-btn-sm" title="Show pinned entries">Pinned</button>
-          <button id="ls-filter-orphans" class="ls-btn ls-btn-sm" title="Show orphan entries">Orphans</button>
-          <button id="ls-filter-disabled" class="ls-btn ls-btn-sm" title="Show disabled entries">Disabled</button>
-        </div>
+        <div id="ls-entry-list-body" class="ls-entry-list-body"></div>
       </div>
-      <div class="ls-toolbar-right">
-        <div class="ls-layout-group">
-          <label class="ls-label">Layout:</label>
-          <select id="ls-layout-selector" class="ls-select">
-            <option value="force">Force-Directed 3D</option>
-            <option value="grid">3D Grid</option>
-            <option value="sphere">Sphere</option>
-            <option value="helix">Helix</option>
-          </select>
+
+      <!-- Graph canvas -->
+      <div id="ls-graph-container" class="ls-graph-container"></div>
+
+      <!-- Sidebar (hidden by default, shown when entry selected) -->
+      <div id="ls-sidebar" class="ls-sidebar ls-sidebar-hidden">
+        <div id="ls-sidebar-resize-handle" class="ls-sidebar-resize-handle"></div>
+        <div class="ls-sidebar-inner">
+          <div class="ls-sidebar-header">
+            <h3 id="ls-sidebar-title">Entry Details</h3>
+            <button id="ls-sidebar-close" class="ls-btn ls-btn-icon" title="Close sidebar">&times;</button>
+          </div>
+          <div class="ls-sidebar-body">
+            <div class="ls-field">
+              <label class="ls-label" for="ls-entry-comment">Name / Comment</label>
+              <input type="text" id="ls-entry-comment" class="ls-input" />
+            </div>
+            <div class="ls-field">
+              <label class="ls-label" for="ls-entry-keys">Primary Keys <span class="ls-hint">(comma-separated)</span></label>
+              <input type="text" id="ls-entry-keys" class="ls-input" />
+            </div>
+            <div class="ls-field-row">
+              <div class="ls-field ls-flex-grow">
+                <label class="ls-label" for="ls-entry-keysecondary">Secondary Keys <span class="ls-hint">(comma-separated)</span></label>
+                <input type="text" id="ls-entry-keysecondary" class="ls-input" />
+              </div>
+              <div class="ls-field" style="min-width: 110px;">
+                <label class="ls-label" for="ls-entry-selective-logic">Logic</label>
+                <select id="ls-entry-selective-logic" class="ls-select">
+                  <option value="0">AND ANY</option>
+                  <option value="1">AND ALL</option>
+                  <option value="2">NOT ANY</option>
+                  <option value="3">NOT ALL</option>
+                </select>
+              </div>
+            </div>
+            <div class="ls-field">
+              <label class="ls-label" for="ls-entry-content">Content</label>
+              <textarea id="ls-entry-content" class="ls-textarea" rows="8"></textarea>
+            </div>
+            <div class="ls-field-row">
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-position">Position</label>
+                <select id="ls-entry-position" class="ls-select">
+                  <option value="0">Before Character Defs</option>
+                  <option value="1">After Character Defs</option>
+                  <option value="2">Before Example Messages</option>
+                  <option value="3">After Example Messages</option>
+                  <option value="4">Top of AN</option>
+                  <option value="5">Bottom of AN</option>
+                  <option value="6">@ Depth</option>
+                </select>
+              </div>
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-depth">Depth</label>
+                <input type="number" id="ls-entry-depth" class="ls-input" min="0" max="999" />
+              </div>
+            </div>
+            <div class="ls-field-row">
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-order">Order</label>
+                <input type="number" id="ls-entry-order" class="ls-input" min="0" max="999" />
+              </div>
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-probability">Trigger %</label>
+                <input type="number" id="ls-entry-probability" class="ls-input" min="0" max="100" />
+              </div>
+            </div>
+            <div class="ls-field-row">
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-scan-depth">Scan Depth <span class="ls-hint">(null = default)</span></label>
+                <input type="number" id="ls-entry-scan-depth" class="ls-input" min="0" max="100" placeholder="null" />
+              </div>
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-automation-id">Automation ID</label>
+                <input type="text" id="ls-entry-automation-id" class="ls-input" placeholder="" />
+              </div>
+            </div>
+            <div class="ls-field-row">
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-group">Group</label>
+                <input type="text" id="ls-entry-group" class="ls-input" />
+              </div>
+              <div class="ls-field ls-field-half">
+                <label class="ls-label" for="ls-entry-group-weight">Group Weight</label>
+                <input type="number" id="ls-entry-group-weight" class="ls-input" min="0" max="9999" />
+              </div>
+            </div>
+            <div class="ls-field-row ls-toggles">
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-enabled" />
+                <span>Enabled</span>
+              </label>
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-constant" />
+                <span>Constant</span>
+              </label>
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-selective" />
+                <span>Selective</span>
+              </label>
+            </div>
+            <div class="ls-field-row ls-toggles">
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-case-sensitive" />
+                <span>Case-Sensitive</span>
+              </label>
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-match-whole-words" />
+                <span>Match Whole Words</span>
+              </label>
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-use-group-scoring" />
+                <span>Group Scoring</span>
+              </label>
+            </div>
+            <div class="ls-field-row ls-toggles">
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-exclude-recursion" />
+                <span>Non-Recursable</span>
+              </label>
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-prevent-recursion" />
+                <span>Prevent Recursion</span>
+              </label>
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-delay-until-recursion" />
+                <span>Delay Until Recursion</span>
+              </label>
+            </div>
+            <div class="ls-field-row ls-toggles">
+              <label class="ls-toggle">
+                <input type="checkbox" id="ls-entry-group-override" />
+                <span>Prioritize</span>
+              </label>
+            </div>
+            <div class="ls-field-row">
+              <div class="ls-field ls-field-third">
+                <label class="ls-label" for="ls-entry-sticky">Sticky</label>
+                <input type="number" id="ls-entry-sticky" class="ls-input" min="0" max="999" placeholder="null" />
+              </div>
+              <div class="ls-field ls-field-third">
+                <label class="ls-label" for="ls-entry-cooldown">Cooldown</label>
+                <input type="number" id="ls-entry-cooldown" class="ls-input" min="0" max="999" placeholder="null" />
+              </div>
+              <div class="ls-field ls-field-third">
+                <label class="ls-label" for="ls-entry-delay">Delay</label>
+                <input type="number" id="ls-entry-delay" class="ls-input" min="0" max="999" placeholder="null" />
+              </div>
+            </div>
+
+            <!-- Studio Metadata -->
+            <div class="ls-studio-section">
+              <div class="ls-studio-divider">
+                <span class="ls-studio-divider-text">Studio</span>
+              </div>
+              <div class="ls-field">
+                <label class="ls-label" for="ls-entry-category">Category</label>
+                <div class="ls-field-row">
+                  <select id="ls-entry-category" class="ls-select ls-flex-grow">
+                    <option value="">-- None --</option>
+                  </select>
+                  <button id="ls-btn-manage-categories" class="ls-btn ls-btn-sm" title="Manage categories">Manage</button>
+                </div>
+              </div>
+              <div class="ls-field">
+                <label class="ls-label">Tags</label>
+                <div id="ls-tag-container" class="ls-tag-container"></div>
+                <div class="ls-tag-input-wrapper">
+                  <input type="text" id="ls-tag-input" class="ls-input" placeholder="Add tag..." />
+                  <div id="ls-tag-autocomplete" class="ls-tag-autocomplete ls-hidden"></div>
+                </div>
+              </div>
+              <div class="ls-field-row">
+                <div class="ls-field ls-field-half">
+                  <label class="ls-label" for="ls-entry-status">Status</label>
+                  <select id="ls-entry-status" class="ls-select">
+                    <option value="">-- None --</option>
+                    <option value="draft">Draft</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="review">Review</option>
+                    <option value="complete">Complete</option>
+                  </select>
+                </div>
+                <div class="ls-field ls-field-half">
+                  <label class="ls-label">&nbsp;</label>
+                  <label class="ls-toggle ls-pin-toggle">
+                    <input type="checkbox" id="ls-entry-pinned" />
+                    <span>&#9733; Pinned</span>
+                  </label>
+                </div>
+              </div>
+              <div class="ls-field">
+                <label class="ls-label" for="ls-entry-notes">Studio Notes</label>
+                <textarea id="ls-entry-notes" class="ls-textarea" rows="3" placeholder="Private notes..."></textarea>
+              </div>
+              <div class="ls-field">
+                <label class="ls-label">Color Override</label>
+                <div class="ls-color-override-row">
+                  <input type="color" id="ls-entry-color-override" class="ls-color-input" value="#5a52a0" />
+                  <label class="ls-toggle">
+                    <input type="checkbox" id="ls-entry-color-enabled" />
+                    <span>Enable</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ls-sidebar-footer">
+            <button id="ls-btn-save-entry" class="ls-btn ls-btn-primary">Save</button>
+            <button id="ls-btn-revert-entry" class="ls-btn">Revert</button>
+            <button id="ls-btn-duplicate-entry" class="ls-btn">Duplicate</button>
+            <button id="ls-btn-delete-entry" class="ls-btn ls-btn-danger">Delete</button>
+          </div>
         </div>
-        <div class="ls-zoom-group">
-          <button id="ls-zoom-in" class="ls-btn ls-btn-icon" title="Zoom in">+</button>
-          <button id="ls-zoom-out" class="ls-btn ls-btn-icon" title="Zoom out">&minus;</button>
-          <button id="ls-zoom-fit" class="ls-btn ls-btn-icon" title="Fit all">&#x26F6;</button>
-        </div>
-        <div class="ls-toggle-group">
-          <label class="ls-toggle" title="Show auto-detected links">
-            <input type="checkbox" id="ls-toggle-auto-links" checked />
-            <span>Auto</span>
-          </label>
-          <label class="ls-toggle" title="Show manual links">
-            <input type="checkbox" id="ls-toggle-manual-links" checked />
-            <span>Manual</span>
-          </label>
-        </div>
-        <button id="ls-btn-auto-orbit" class="ls-btn" title="Toggle slow auto-rotation">Orbit</button>
-        <select id="ls-theme-selector" class="ls-select ls-select-sm" title="Visual theme">
-          <option value="midnight">Midnight</option>
-          <option value="nebula">Nebula</option>
-          <option value="ember">Ember</option>
-          <option value="arctic">Arctic</option>
-        </select>
-        <button id="ls-btn-view-mode" class="ls-btn" title="Toggle card/label view">Cards</button>
-        <button id="ls-btn-stats" class="ls-btn" title="Statistics">Stats</button>
-        <button id="ls-btn-connect" class="ls-btn" title="Connect two entries (click source then target)">Link</button>
-        <button id="ls-btn-add-entry" class="ls-btn ls-btn-primary" title="Add new entry">+ Entry</button>
-        <button id="ls-btn-close" class="ls-btn ls-btn-icon ls-btn-close" title="Close Lorebook Studio">&times;</button>
       </div>
     </div>
 
@@ -78,223 +405,6 @@
         <span id="ls-status-text">Select a lorebook to begin</span>
       </span>
       <span id="ls-entry-count"></span>
-    </div>
-
-    <!-- Main content area -->
-    <div id="ls-content" class="ls-content">
-      <!-- Graph canvas -->
-      <div id="ls-graph-container" class="ls-graph-container"></div>
-
-      <!-- Sidebar (hidden by default, shown when entry selected) -->
-      <div id="ls-sidebar" class="ls-sidebar ls-sidebar-hidden">
-        <div id="ls-sidebar-resize-handle" class="ls-sidebar-resize-handle"></div>
-        <div class="ls-sidebar-header">
-          <h3 id="ls-sidebar-title">Entry Details</h3>
-          <button id="ls-sidebar-close" class="ls-btn ls-btn-icon" title="Close sidebar">&times;</button>
-        </div>
-        <div class="ls-sidebar-body">
-          <div class="ls-field">
-            <label class="ls-label" for="ls-entry-comment">Name / Comment</label>
-            <input type="text" id="ls-entry-comment" class="ls-input" />
-          </div>
-          <div class="ls-field">
-            <label class="ls-label" for="ls-entry-keys">Primary Keys <span class="ls-hint">(comma-separated)</span></label>
-            <input type="text" id="ls-entry-keys" class="ls-input" />
-          </div>
-          <div class="ls-field-row">
-            <div class="ls-field ls-flex-grow">
-              <label class="ls-label" for="ls-entry-keysecondary">Secondary Keys <span class="ls-hint">(comma-separated)</span></label>
-              <input type="text" id="ls-entry-keysecondary" class="ls-input" />
-            </div>
-            <div class="ls-field" style="min-width: 110px;">
-              <label class="ls-label" for="ls-entry-selective-logic">Logic</label>
-              <select id="ls-entry-selective-logic" class="ls-select">
-                <option value="0">AND ANY</option>
-                <option value="1">AND ALL</option>
-                <option value="2">NOT ANY</option>
-                <option value="3">NOT ALL</option>
-              </select>
-            </div>
-          </div>
-          <div class="ls-field">
-            <label class="ls-label" for="ls-entry-content">Content</label>
-            <textarea id="ls-entry-content" class="ls-textarea" rows="8"></textarea>
-          </div>
-          <div class="ls-field-row">
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-position">Position</label>
-              <select id="ls-entry-position" class="ls-select">
-                <option value="0">Before Character Defs</option>
-                <option value="1">After Character Defs</option>
-                <option value="2">Before Example Messages</option>
-                <option value="3">After Example Messages</option>
-                <option value="4">Top of AN</option>
-                <option value="5">Bottom of AN</option>
-                <option value="6">@ Depth</option>
-              </select>
-            </div>
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-depth">Depth</label>
-              <input type="number" id="ls-entry-depth" class="ls-input" min="0" max="999" />
-            </div>
-          </div>
-          <div class="ls-field-row">
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-order">Order</label>
-              <input type="number" id="ls-entry-order" class="ls-input" min="0" max="999" />
-            </div>
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-probability">Trigger %</label>
-              <input type="number" id="ls-entry-probability" class="ls-input" min="0" max="100" />
-            </div>
-          </div>
-          <div class="ls-field-row">
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-scan-depth">Scan Depth <span class="ls-hint">(null = default)</span></label>
-              <input type="number" id="ls-entry-scan-depth" class="ls-input" min="0" max="100" placeholder="null" />
-            </div>
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-automation-id">Automation ID</label>
-              <input type="text" id="ls-entry-automation-id" class="ls-input" placeholder="" />
-            </div>
-          </div>
-          <div class="ls-field-row">
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-group">Group</label>
-              <input type="text" id="ls-entry-group" class="ls-input" />
-            </div>
-            <div class="ls-field ls-field-half">
-              <label class="ls-label" for="ls-entry-group-weight">Group Weight</label>
-              <input type="number" id="ls-entry-group-weight" class="ls-input" min="0" max="9999" />
-            </div>
-          </div>
-          <div class="ls-field-row ls-toggles">
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-enabled" />
-              <span>Enabled</span>
-            </label>
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-constant" />
-              <span>Constant</span>
-            </label>
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-selective" />
-              <span>Selective</span>
-            </label>
-          </div>
-          <div class="ls-field-row ls-toggles">
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-case-sensitive" />
-              <span>Case-Sensitive</span>
-            </label>
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-match-whole-words" />
-              <span>Match Whole Words</span>
-            </label>
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-use-group-scoring" />
-              <span>Group Scoring</span>
-            </label>
-          </div>
-          <div class="ls-field-row ls-toggles">
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-exclude-recursion" />
-              <span>Non-Recursable</span>
-            </label>
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-prevent-recursion" />
-              <span>Prevent Recursion</span>
-            </label>
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-delay-until-recursion" />
-              <span>Delay Until Recursion</span>
-            </label>
-          </div>
-          <div class="ls-field-row ls-toggles">
-            <label class="ls-toggle">
-              <input type="checkbox" id="ls-entry-group-override" />
-              <span>Prioritize</span>
-            </label>
-          </div>
-          <div class="ls-field-row">
-            <div class="ls-field ls-field-third">
-              <label class="ls-label" for="ls-entry-sticky">Sticky</label>
-              <input type="number" id="ls-entry-sticky" class="ls-input" min="0" max="999" placeholder="null" />
-            </div>
-            <div class="ls-field ls-field-third">
-              <label class="ls-label" for="ls-entry-cooldown">Cooldown</label>
-              <input type="number" id="ls-entry-cooldown" class="ls-input" min="0" max="999" placeholder="null" />
-            </div>
-            <div class="ls-field ls-field-third">
-              <label class="ls-label" for="ls-entry-delay">Delay</label>
-              <input type="number" id="ls-entry-delay" class="ls-input" min="0" max="999" placeholder="null" />
-            </div>
-          </div>
-
-          <!-- Studio Metadata -->
-          <div class="ls-studio-section">
-            <div class="ls-studio-divider">
-              <span class="ls-studio-divider-text">Studio</span>
-            </div>
-            <div class="ls-field">
-              <label class="ls-label" for="ls-entry-category">Category</label>
-              <div class="ls-field-row">
-                <select id="ls-entry-category" class="ls-select ls-flex-grow">
-                  <option value="">-- None --</option>
-                </select>
-                <button id="ls-btn-manage-categories" class="ls-btn ls-btn-sm" title="Manage categories">Manage</button>
-              </div>
-            </div>
-            <div class="ls-field">
-              <label class="ls-label">Tags</label>
-              <div id="ls-tag-container" class="ls-tag-container"></div>
-              <div class="ls-tag-input-wrapper">
-                <input type="text" id="ls-tag-input" class="ls-input" placeholder="Add tag..." />
-                <div id="ls-tag-autocomplete" class="ls-tag-autocomplete ls-hidden"></div>
-              </div>
-            </div>
-            <div class="ls-field-row">
-              <div class="ls-field ls-field-half">
-                <label class="ls-label" for="ls-entry-status">Status</label>
-                <select id="ls-entry-status" class="ls-select">
-                  <option value="">-- None --</option>
-                  <option value="draft">Draft</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="review">Review</option>
-                  <option value="complete">Complete</option>
-                </select>
-              </div>
-              <div class="ls-field ls-field-half">
-                <label class="ls-label">&nbsp;</label>
-                <label class="ls-toggle ls-pin-toggle">
-                  <input type="checkbox" id="ls-entry-pinned" />
-                  <span>&#9733; Pinned</span>
-                </label>
-              </div>
-            </div>
-            <div class="ls-field">
-              <label class="ls-label" for="ls-entry-notes">Studio Notes</label>
-              <textarea id="ls-entry-notes" class="ls-textarea" rows="3" placeholder="Private notes..."></textarea>
-            </div>
-            <div class="ls-field">
-              <label class="ls-label">Color Override</label>
-              <div class="ls-color-override-row">
-                <input type="color" id="ls-entry-color-override" class="ls-color-input" value="#5a52a0" />
-                <label class="ls-toggle">
-                  <input type="checkbox" id="ls-entry-color-enabled" />
-                  <span>Enable</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="ls-sidebar-footer">
-          <button id="ls-btn-save-entry" class="ls-btn ls-btn-primary">Save</button>
-          <button id="ls-btn-revert-entry" class="ls-btn">Revert</button>
-          <button id="ls-btn-duplicate-entry" class="ls-btn">Duplicate</button>
-          <button id="ls-btn-delete-entry" class="ls-btn ls-btn-danger">Delete</button>
-        </div>
-      </div>
     </div>
 
     <!-- Stats panel (hidden by default) -->

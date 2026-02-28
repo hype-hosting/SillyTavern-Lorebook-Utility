@@ -204,4 +204,5 @@ function applyFilters(): void {
   }
 
   applySearchHighlight(matchingIds);
+  EventBus.emit(STUDIO_EVENTS.FILTERS_CHANGED);
 }

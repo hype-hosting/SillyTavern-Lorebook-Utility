@@ -90,4 +90,5 @@ export const STUDIO_EVENTS = {
   CONNECT_MODE_END: 'ls:connect-mode-end',
   STUDIO_META_UPDATED: 'ls:studio-meta-updated',
   CATEGORIES_CHANGED: 'ls:categories-changed',
+  FILTERS_CHANGED: 'ls:filters-changed',
 } as const;
