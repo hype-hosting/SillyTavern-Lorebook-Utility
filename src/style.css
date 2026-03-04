@@ -32,15 +32,16 @@
   --ls-radius-sm: 6px;
   --ls-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   /* Glassmorphism tokens */
-  --ls-glass-bg: rgba(19, 17, 28, 0.65);
-  --ls-glass-border: rgba(255, 255, 255, 0.08);
-  --ls-glass-blur: 16px;
-  --ls-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --ls-glass-bg: rgba(19, 17, 28, 0.45);
+  --ls-glass-border: rgba(255, 255, 255, 0.12);
+  --ls-glass-blur: 20px;
+  --ls-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --ls-glass-glow: rgba(124, 107, 222, 0.15);
   /* Gradient mesh colors */
-  --ls-mesh-color-1: #7c6bde;
-  --ls-mesh-color-2: #d4a0c0;
-  --ls-mesh-color-3: #4a9eff;
-  --ls-mesh-color-4: #22d3ee;
+  --ls-mesh-color-1: #9580ff;
+  --ls-mesh-color-2: #e8a0d0;
+  --ls-mesh-color-3: #60b0ff;
+  --ls-mesh-color-4: #40e8f0;
 }
 
 /* --- Overlay --- */
@@ -68,10 +69,49 @@
 /* --- Glassmorphism utility --- */
 .ls-glass {
   background: var(--ls-glass-bg);
-  backdrop-filter: blur(var(--ls-glass-blur));
-  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
+  backdrop-filter: blur(var(--ls-glass-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur)) saturate(1.2);
   border: 1px solid var(--ls-glass-border);
-  box-shadow: var(--ls-glass-shadow);
+  box-shadow: var(--ls-glass-shadow), 0 0 20px var(--ls-glass-glow);
+  position: relative;
+}
+
+/* Diagonal light shimmer */
+.ls-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  z-index: 0;
+}
+
+/* Top edge highlight refraction */
+.ls-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+  z-index: 1;
 }
 
 /* --- Drawer --- */
@@ -110,11 +150,11 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 600px 600px at 20% 30%, var(--ls-mesh-color-1), transparent),
-    radial-gradient(ellipse 500px 500px at 80% 20%, var(--ls-mesh-color-2), transparent),
-    radial-gradient(ellipse 700px 700px at 60% 80%, var(--ls-mesh-color-3), transparent),
-    radial-gradient(ellipse 400px 400px at 30% 70%, var(--ls-mesh-color-4), transparent);
-  opacity: 0.07;
+    radial-gradient(ellipse 700px 700px at 20% 30%, var(--ls-mesh-color-1), transparent),
+    radial-gradient(ellipse 600px 600px at 80% 20%, var(--ls-mesh-color-2), transparent),
+    radial-gradient(ellipse 800px 800px at 60% 80%, var(--ls-mesh-color-3), transparent),
+    radial-gradient(ellipse 500px 500px at 30% 70%, var(--ls-mesh-color-4), transparent);
+  opacity: 0.18;
   animation: ls-mesh-shift 25s ease-in-out infinite alternate;
   will-change: background-position;
 }
@@ -414,20 +454,28 @@
 .ls-content {
   flex: 1;
   display: flex;
+  flex-direction: row;
+  gap: 0;
   overflow: hidden;
   position: relative;
   z-index: 1;
 }
 
+/* Disable flex transitions during pane resize drag */
+.ls-content.ls-resizing .ls-graph-card,
+.ls-content.ls-resizing .ls-entry-card {
+  transition: none !important;
+}
+
 /* --- Graph Card --- */
 .ls-graph-card {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0%;
+  min-width: 200px;
   position: relative;
   border-radius: var(--ls-radius);
-  margin: 8px;
+  margin: 8px 0 8px 8px;
   overflow: hidden;
-  transition: opacity var(--ls-transition), transform var(--ls-transition);
+  transition: flex 0.3s ease;
 }
 
 .ls-graph-card.ls-graph-hidden {
@@ -1263,12 +1311,13 @@
   --ls-node-selected: #f0abfc;
   --ls-edge-auto: #a78bfa;
   --ls-edge-manual: #f0abfc;
-  --ls-glass-bg: rgba(15, 10, 26, 0.6);
-  --ls-glass-border: rgba(192, 132, 252, 0.1);
-  --ls-mesh-color-1: #c084fc;
-  --ls-mesh-color-2: #f0abfc;
-  --ls-mesh-color-3: #a78bfa;
-  --ls-mesh-color-4: #818cf8;
+  --ls-glass-bg: rgba(15, 10, 26, 0.4);
+  --ls-glass-border: rgba(192, 132, 252, 0.15);
+  --ls-glass-glow: rgba(192, 132, 252, 0.12);
+  --ls-mesh-color-1: #d0a0ff;
+  --ls-mesh-color-2: #f5b8ff;
+  --ls-mesh-color-3: #b8a0ff;
+  --ls-mesh-color-4: #98a0ff;
 }
 
 /* --- Ember: warm amber/copper palette --- */
@@ -1291,49 +1340,74 @@
   --ls-node-selected: #fbbf24;
   --ls-edge-auto: #fb923c;
   --ls-edge-manual: #f87171;
-  --ls-glass-bg: rgba(22, 16, 16, 0.6);
-  --ls-glass-border: rgba(245, 158, 11, 0.1);
-  --ls-mesh-color-1: #f59e0b;
-  --ls-mesh-color-2: #fb923c;
-  --ls-mesh-color-3: #f87171;
-  --ls-mesh-color-4: #fbbf24;
+  --ls-glass-bg: rgba(22, 16, 16, 0.4);
+  --ls-glass-border: rgba(245, 158, 11, 0.15);
+  --ls-glass-glow: rgba(245, 158, 11, 0.1);
+  --ls-mesh-color-1: #ffb830;
+  --ls-mesh-color-2: #ffa050;
+  --ls-mesh-color-3: #ff8888;
+  --ls-mesh-color-4: #ffd040;
 }
 
-/* --- Floating Entry Cards --- */
+/* --- Entry Card Panes --- */
 .ls-entry-card {
-  position: absolute;
-  width: 380px;
-  max-height: calc(100% - 24px);
-  z-index: 10;
+  position: relative;
+  flex: 0 0 380px;
+  min-width: 280px;
+  max-width: 50%;
+  max-height: 100%;
+  z-index: 2;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  margin: 8px 8px 8px 0;
   background: var(--ls-glass-bg);
-  backdrop-filter: blur(var(--ls-glass-blur));
-  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
+  backdrop-filter: blur(var(--ls-glass-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur)) saturate(1.2);
   border: 1px solid var(--ls-glass-border);
-  box-shadow: var(--ls-glass-shadow);
+  box-shadow: var(--ls-glass-shadow), 0 0 20px var(--ls-glass-glow);
+  transition: flex-basis 0.3s ease, opacity 0.3s ease;
 }
 
 .ls-entry-card.ls-card-hidden {
   display: none;
 }
 
-/* Snap positions */
-.ls-entry-card.ls-snap-right {
-  right: 12px;
-  top: 12px;
+/* Resize handle between panes */
+.ls-pane-resize-handle {
+  width: 6px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 20;
+  transition: background 0.15s ease;
+  margin: 12px 0;
+  border-radius: 3px;
 }
 
-.ls-entry-card.ls-snap-pair-left {
-  left: 12px;
-  top: 12px;
+.ls-pane-resize-handle:hover,
+.ls-pane-resize-handle.ls-dragging {
+  background: var(--ls-accent);
 }
 
-.ls-entry-card.ls-snap-pair-right {
-  right: 12px;
-  top: 12px;
+.ls-pane-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 32px;
+  border-radius: 1px;
+  background: var(--ls-text-muted);
+  opacity: 0.4;
+}
+
+.ls-pane-resize-handle:hover::after,
+.ls-pane-resize-handle.ls-dragging::after {
+  opacity: 0;
 }
 
 .ls-entry-card-header {
@@ -1342,13 +1416,9 @@
   justify-content: space-between;
   padding: 10px 14px;
   border-bottom: 1px solid var(--ls-border);
-  cursor: grab;
+  cursor: default;
   user-select: none;
   flex-shrink: 0;
-}
-
-.ls-entry-card-header:active {
-  cursor: grabbing;
 }
 
 .ls-entry-card-title {
@@ -1416,10 +1486,11 @@
   --ls-node-selected: #67e8f9;
   --ls-edge-auto: #38bdf8;
   --ls-edge-manual: #a78bfa;
-  --ls-glass-bg: rgba(10, 18, 24, 0.6);
-  --ls-glass-border: rgba(34, 211, 238, 0.1);
-  --ls-mesh-color-1: #22d3ee;
-  --ls-mesh-color-2: #38bdf8;
-  --ls-mesh-color-3: #a78bfa;
-  --ls-mesh-color-4: #67e8f9;
+  --ls-glass-bg: rgba(10, 18, 24, 0.4);
+  --ls-glass-border: rgba(34, 211, 238, 0.15);
+  --ls-glass-glow: rgba(34, 211, 238, 0.12);
+  --ls-mesh-color-1: #40e8f8;
+  --ls-mesh-color-2: #50d0ff;
+  --ls-mesh-color-3: #b8a0ff;
+  --ls-mesh-color-4: #80f0ff;
 }

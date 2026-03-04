@@ -19,16 +19,18 @@ export class EntryCard {
   private originalEntry: LorebookEntry | null = null;
   private currentTags: string[] = [];
   private element: HTMLElement;
-  private isDragging = false;
-  private dragOffset = { x: 0, y: 0 };
   private _isOpen = false;
+  private resizeHandle: HTMLElement;
 
   constructor(slot: 0 | 1, parent: HTMLElement) {
     this.slot = slot;
+    this.resizeHandle = this.createResizeHandle();
     this.element = this.createDOM();
+    parent.appendChild(this.resizeHandle);
     parent.appendChild(this.element);
+    this.resizeHandle.style.display = 'none';
     this.initEventListeners();
-    this.initDragBehavior();
+    this.initResizeBehavior();
     this.initTagInput();
 
     // Refresh category dropdown when categories change
@@ -44,13 +46,22 @@ export class EntryCard {
 
   open(uid: number, bookName: string): void {
     this.loadEntry(uid, bookName);
+    // Animated open: start collapsed, expand on next frame
+    this.element.style.flexBasis = '0px';
+    this.element.style.opacity = '0';
     this.element.classList.remove('ls-card-hidden');
+    this.resizeHandle.style.display = '';
+    requestAnimationFrame(() => {
+      this.element.style.flexBasis = '';
+      this.element.style.opacity = '1';
+    });
     this._isOpen = true;
     EventBus.emit(STUDIO_EVENTS.ENTRY_CARD_OPENED, { slot: this.slot, uid });
   }
 
   close(): void {
     this.element.classList.add('ls-card-hidden');
+    this.resizeHandle.style.display = 'none';
     this.selectedEntry = null;
     this.originalEntry = null;
     this.currentTags = [];
@@ -66,24 +77,12 @@ export class EntryCard {
     return this._isOpen;
   }
 
-  snapToDefault(): void {
-    // Remove any manual positioning
-    this.element.style.left = '';
-    this.element.style.top = '';
-    this.element.style.right = '';
-    this.element.classList.remove('ls-snap-right', 'ls-snap-pair-left', 'ls-snap-pair-right');
-  }
-
-  setSnapClass(cls: string): void {
-    this.element.classList.remove('ls-snap-right', 'ls-snap-pair-left', 'ls-snap-pair-right');
-    this.element.style.left = '';
-    this.element.style.top = '';
-    this.element.style.right = '';
-    this.element.classList.add(cls);
-  }
-
   getElement(): HTMLElement {
     return this.element;
+  }
+
+  getResizeHandle(): HTMLElement {
+    return this.resizeHandle;
   }
 
   // --- DOM Creation ---
@@ -288,47 +287,44 @@ export class EntryCard {
     });
   }
 
-  // --- Drag Behavior ---
+  // --- Resize Handle ---
 
-  private initDragBehavior(): void {
-    const header = this.q('.ls-entry-card-header') as HTMLElement | null;
-    if (!header) return;
+  private createResizeHandle(): HTMLElement {
+    const handle = document.createElement('div');
+    handle.className = 'ls-pane-resize-handle';
+    return handle;
+  }
 
-    header.addEventListener('pointerdown', (e: PointerEvent) => {
-      // Don't drag if clicking a button
-      if ((e.target as HTMLElement).closest('button')) return;
+  private initResizeBehavior(): void {
+    let startX = 0;
+    let startWidth = 0;
 
-      this.isDragging = true;
-      const rect = this.element.getBoundingClientRect();
-      this.dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const onMove = (e: PointerEvent) => {
+      e.preventDefault();
+      const delta = startX - e.clientX;
+      const parentWidth = this.element.parentElement?.clientWidth || 1000;
+      const maxWidth = parentWidth * 0.5;
+      const newWidth = Math.max(280, Math.min(startWidth + delta, maxWidth));
+      this.element.style.flexBasis = newWidth + 'px';
+    };
 
-      // Remove snap classes when user starts dragging
-      this.element.classList.remove('ls-snap-right', 'ls-snap-pair-left', 'ls-snap-pair-right');
-      this.element.style.transition = 'none';
+    const onUp = () => {
+      this.resizeHandle.classList.remove('ls-dragging');
+      this.element.parentElement?.classList.remove('ls-resizing');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
 
-      const onMove = (ev: PointerEvent) => {
-        const parent = this.element.parentElement;
-        if (!parent) return;
-        const parentRect = parent.getBoundingClientRect();
-        let left = ev.clientX - parentRect.left - this.dragOffset.x;
-        let top = ev.clientY - parentRect.top - this.dragOffset.y;
-
-        // Clamp to stay visible
-        left = Math.max(0, Math.min(left, parentRect.width - 100));
-        top = Math.max(0, Math.min(top, parentRect.height - 50));
-
-        this.element.style.left = left + 'px';
-        this.element.style.top = top + 'px';
-        this.element.style.right = 'auto';
-      };
-
-      const onUp = () => {
-        this.isDragging = false;
-        this.element.style.transition = '';
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-      };
-
+    this.resizeHandle.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.preventDefault();
+      startX = e.clientX;
+      startWidth = this.element.offsetWidth;
+      this.resizeHandle.classList.add('ls-dragging');
+      this.element.parentElement?.classList.add('ls-resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
     });

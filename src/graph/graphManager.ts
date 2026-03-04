@@ -30,6 +30,7 @@ import { escapeHtml } from '../utils/domHelpers';
 let graph: any = null;
 let currentBookName = '';
 let graphContainer: HTMLElement | null = null;
+let resizeObserver: ResizeObserver | null = null;
 
 // Node/link data arrays (owned by us, passed to 3d-force-graph)
 let graphNodes: GraphNode[] = [];
@@ -235,6 +236,14 @@ export function initGraph(
     }, 2000);
   }
 
+  // Auto-resize WebGL canvas when container dimensions change
+  resizeObserver = new ResizeObserver(() => {
+    if (graph && graphContainer) {
+      graph.width(graphContainer.clientWidth).height(graphContainer.clientHeight);
+    }
+  });
+  resizeObserver.observe(container);
+
   return graph;
 }
 
@@ -275,6 +284,10 @@ export function destroyGraph(): void {
       graphContainer.removeEventListener('contextmenu', preventContextMenu);
       graphContainer.innerHTML = '';
     }
+  }
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
   }
   graphNodes = [];
   graphLinks = [];

@@ -1,9 +1,10 @@
 /**
- * Card manager — orchestrates up to 2 floating entry editor cards.
+ * Card manager — orchestrates up to 2 entry editor panes in a flex row.
  */
 
 import { EntryCard } from './entryCard';
 import { EventBus, STUDIO_EVENTS } from '../utils/events';
+import { resizeGraph } from '../graph/graphManager';
 
 let cards: [EntryCard, EntryCard] | null = null;
 
@@ -37,7 +38,7 @@ export function openEntryCard(uid: number, bookName: string): void {
   for (const card of cards) {
     if (!card.isOpen()) {
       card.open(uid, bookName);
-      repositionCards();
+      onCardLayoutChanged();
       return;
     }
   }
@@ -45,7 +46,7 @@ export function openEntryCard(uid: number, bookName: string): void {
   // Both full — close slot 0, open new entry there
   cards[0].close();
   cards[0].open(uid, bookName);
-  repositionCards();
+  onCardLayoutChanged();
 }
 
 /**
@@ -66,7 +67,7 @@ export function closeCardByUid(uid: number): void {
   for (const card of cards) {
     if (card.isOpen() && card.getEntryUid() === uid) {
       card.close();
-      repositionCards();
+      onCardLayoutChanged();
       return;
     }
   }
@@ -81,26 +82,13 @@ export function hasOpenCards(): boolean {
 }
 
 /**
- * Reposition cards based on how many are open.
- * - 1 open → snap right
- * - 2 open → left/right pair
+ * Called after card open/close to let the graph resize to its new flex size.
  */
-function repositionCards(): void {
-  if (!cards) return;
-
-  const openCards = cards.filter((c) => c.isOpen());
-
-  if (openCards.length === 1) {
-    openCards[0].setSnapClass('ls-snap-right');
-  } else if (openCards.length === 2) {
-    // Determine order by slot
-    const sorted = openCards.sort((a, b) => a.slot - b.slot);
-    sorted[0].setSnapClass('ls-snap-pair-left');
-    sorted[1].setSnapClass('ls-snap-pair-right');
-  }
+function onCardLayoutChanged(): void {
+  setTimeout(() => resizeGraph(), 350);
 }
 
-// Listen for card close events to reposition remaining cards
+// Listen for card close events to trigger graph resize
 EventBus.on(STUDIO_EVENTS.ENTRY_CARD_CLOSED, () => {
-  repositionCards();
+  onCardLayoutChanged();
 });
