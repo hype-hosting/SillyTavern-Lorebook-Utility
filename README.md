@@ -6,16 +6,36 @@ Built for botmakers and worldbuilders who think visually.
 
 ## Features
 
+### Glassmorphism UI
+- **Liquid glass aesthetic** across all surfaces -- frosted blur, translucent backgrounds, inner light shimmer, and per-theme ambient glow
+- **Animated gradient mesh background** -- slowly shifting colorful radial gradients behind all content
+- **Four visual themes** -- Midnight (violet), Nebula (magenta), Ember (amber), Arctic (cyan) -- each with unique glass tints and mesh colors
+- Theme selection persists across sessions
+
 ### 3D Graph Visualization
 - Lorebook entries rendered as **floating card nodes** in an interactive 3D space powered by WebGL
+- **Graph canvas pane** -- the 3D graph sits in its own resizable glass pane that can be toggled on/off via the toolbar
 - **Orbit, rotate, and zoom** -- click-drag to rotate the graph, scroll to zoom, right-drag to pan
 - **Two view modes** -- toggle between detailed **Card view** (name + keyword preview + status badges) and minimal **Label view** for a constellation-like feel
 - **Automatic recursion detection** -- scans entry content for keywords that trigger other entries and draws directed connection lines
 - **Manual links** -- create your own custom connections between entries via connect mode
-- **Color-coded nodes** -- nodes inherit category colors, with support for per-entry color overrides, status indicators, pin stars, and notes badges
+- **Connection highlighting** -- clicking a node glows its connected neighbors and dims unconnected nodes; connected edges brighten while others fade
+- **Color-coded nodes** -- nodes inherit category colors, with support for per-entry color overrides, status indicators (◌ ◔ ◑ ✓), pin stars, notes badges, and connection count badges
 - Directional arrow edges with labels showing the triggering keyword
 - Auto-detected links shown as straight blue lines; manual links as curved pink lines
 - **Auto-orbit** -- toggle slow idle rotation for a living, ambient feel when not interacting
+
+### Dual Entry Editing
+- Click any node to open an **entry editor pane** alongside the graph -- up to **two entries side-by-side** for comparison editing
+- Editor panes tile in a **flex row layout** with the graph canvas -- panes never overlap
+- **Resizable panes** -- drag the handle between panes to adjust widths
+- When the graph canvas is hidden, editor panes automatically expand to fill the available space
+- Full World Info field editing: name, keys, secondary keys, content, position, depth, order, probability, group, and all toggles
+- **Studio metadata section** for managing categories, tags, status, pins, notes, and color overrides
+- **Create** new entries directly from the graph view
+- **Duplicate** entries with one click (copies both lorebook data and studio metadata)
+- **Delete** entries with confirmation
+- **Right-click context menu** on any node for quick actions
 
 ### Organizational Suite
 - **Categories** -- create custom color-coded categories (e.g. Characters, Locations, Factions) with a built-in category manager. Node colors on the graph reflect their assigned category.
@@ -26,15 +46,6 @@ Built for botmakers and worldbuilders who think visually.
 - **Color Override** -- override the default or category color with a custom per-entry color for special highlighting
 
 All organizational metadata is stored in extension settings only -- it never modifies SillyTavern's lorebook data or affects roleplay behavior.
-
-### Full Editing Suite
-- Click any node to open the **editing sidebar** with all World Info fields: name, keys, secondary keys, content, position, depth, order, probability, group, and all toggles
-- **Studio metadata panel** in the sidebar for managing categories, tags, status, pins, notes, and color overrides
-- **Create** new entries directly from the graph view
-- **Duplicate** entries with one click (copies both lorebook data and studio metadata)
-- **Delete** entries with confirmation
-- **Resizable sidebar** -- drag the left edge to adjust width
-- **Right-click context menu** on any node for quick actions
 
 ### Search and Filter
 - Real-time **full-text search** across entry names, keys, content, tags, and studio notes
@@ -56,14 +67,6 @@ All organizational metadata is stored in extension settings only -- it never mod
 - **Orphan entries** list -- click to navigate
 - **Health checks**: empty content warnings, missing keys, duplicate key detection
 
-### Visual Themes
-- **Midnight** (default) -- deep navy/purple palette with violet accents
-- **Nebula** -- rich purple/magenta palette with soft pink highlights
-- **Ember** -- warm amber/copper palette with golden accents
-- **Arctic** -- cool blue/teal palette with cyan highlights
-- Theme selection persists across sessions
-- Each theme re-skins the entire UI: toolbar, sidebar, status bar, tooltips, and 3D graph background
-
 ### 3D Layout Options
 - **Force-Directed 3D** -- default, organic force-simulated clustering in 3D space
 - **3D Grid** -- ordered cubic grid arrangement
@@ -73,15 +76,14 @@ All organizational metadata is stored in extension settings only -- it never mod
 - **Node positions are saved** per lorebook and persist across sessions (drag to pin)
 
 ### Seamless Integration
-- Full-viewport **drawer UI** with rounded corners and fade/scale animation
+- Full-viewport **drawer UI** with glassmorphic surfaces and fade/scale animation
 - **Vertical icon toolbar** on the left with popover controls for a clean, minimal layout
 - **Collapsible entry list panel** for quick navigation between entries
-- **Card-style editing sidebar** with rounded corners and shadow
 - One-click launch from SillyTavern's World Info panel
 - Close with ESC key, backdrop click, or the close button
 - Auto-refreshes when lorebook data changes in SillyTavern
 - All settings saved through SillyTavern's extension settings system
-- Keyboard shortcuts: ESC (close sidebar/drawer), Delete (delete selected node), Ctrl+D (duplicate)
+- Keyboard shortcuts: ESC (close cards/drawer), Delete (delete selected node), Ctrl+D (duplicate)
 
 ## Installation
 
@@ -104,12 +106,14 @@ The extension comes pre-built -- no additional setup required.
 4. **Select a lorebook** from the dropdown if not auto-detected
 5. **Click-drag the background** to orbit and rotate the 3D view
 6. **Scroll** to zoom in and out
-7. **Click a node** to open the editing sidebar
-8. **Drag nodes** to rearrange -- positions are saved automatically
-9. Use the **Cards/Labels** button to toggle between view modes
-10. Use the **left toolbar icons** to search, filter by category/status/pins, switch layouts, or toggle link visibility
-11. Click **Stats** to see category breakdowns, tag usage, connection analysis, and health checks
-12. In the sidebar, scroll to the **Studio** section to manage categories, tags, status, pins, notes, and colors
+7. **Click a node** to open an editor pane alongside the graph (click a second node to open a second pane for side-by-side editing)
+8. **Drag the resize handle** between panes to adjust widths
+9. **Drag nodes** to rearrange -- positions are saved automatically
+10. Use the **Cards/Labels** button to toggle between view modes
+11. Use the **Eye** button to toggle graph canvas visibility -- editor panes expand to fill when hidden
+12. Use the **left toolbar icons** to search, filter by category/status/pins, switch layouts, or toggle link visibility
+13. Click **Stats** to see category breakdowns, tag usage, connection analysis, and health checks
+14. In the editor pane, scroll to the **Studio** section to manage categories, tags, status, pins, notes, and colors
 
 ## Building from Source
 
@@ -148,7 +152,7 @@ The compiled output goes to `dist/index.js`.
 ```
 src/
   index.ts                 # Extension entry point
-  style.css                # UI stylesheet (themes + dark base)
+  style.css                # Glassmorphism UI stylesheet (themes + animated mesh)
   templates/drawer.html    # Drawer HTML template
   data/
     lorebookData.ts        # SillyTavern World Info read/write
@@ -156,14 +160,15 @@ src/
     manualLinks.ts         # Manual link storage and CRUD
     studioData.ts          # Studio metadata (categories, tags, notes, status, pins, colors)
   graph/
-    graphManager.ts        # 3d-force-graph instance lifecycle
-    nodeStyles.ts          # SpriteText card/label node rendering with category colors
-    edgeStyles.ts          # Edge styling (auto vs manual links)
+    graphManager.ts        # 3d-force-graph instance lifecycle + ResizeObserver
+    nodeStyles.ts          # SpriteText card/label node rendering with glow effects
+    edgeStyles.ts          # Edge styling (auto vs manual links, connection highlighting)
     layouts.ts             # 3D layout algorithms (force, grid, sphere, helix)
   ui/
     drawer.ts              # Full-page drawer component
     toolbar.ts             # Search, filters, layout controls
-    sidebar.ts             # Entry editing panel with studio metadata
+    entryCard.ts           # Floating entry editor pane (instance-based, up to 2)
+    cardManager.ts         # Orchestrates dual editor pane slots
     contextMenu.ts         # Right-click context menu
     connectMode.ts         # Two-click manual link creation
     statsPanel.ts          # Statistics dashboard with category/tag breakdowns
@@ -184,4 +189,4 @@ If you find Lorebook Studio useful, consider supporting development:
 
 ## License
 
-[GPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE)
