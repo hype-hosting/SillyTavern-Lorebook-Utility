@@ -7,6 +7,7 @@
 
 import ForceGraph3D from '3d-force-graph';
 import SpriteText from 'three-spritetext';
+import * as THREE from 'three';
 import { LorebookEntry } from '../data/lorebookData';
 import { RecursionEdge } from '../data/recursionDetector';
 import { getEntryMeta, getCategoryById } from '../data/studioData';
@@ -20,6 +21,7 @@ import {
   getLinkColor, getLinkWidth, getLinkOpacity,
   getLinkVisibility, getLinkCurvature,
   setAutoLinksVisible, setManualLinksVisible, setDimmedLinks,
+  setSelectedNodeForEdges,
 } from './edgeStyles';
 import { configureForces, applyLayout, LayoutName } from './layouts';
 import { escapeHtml } from '../utils/domHelpers';
@@ -37,6 +39,7 @@ let graphLinks: GraphLink[] = [];
 let selectedNodeId: string | null = null;
 let highlightedNodeIds: Set<string> | null = null;
 let connectSourceId: string | null = null;
+const connectedNodeIds: Set<string> = new Set();
 
 // View mode
 let currentViewMode: ViewMode = 'cards';
@@ -53,38 +56,41 @@ let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
 // Auto-orbit state
 let autoOrbitEnabled = false;
 
-// Three.js object caches — tracks every SpriteText we create so we can
+// Three.js object caches — tracks every node object we create so we can
 // dispose GPU resources (texture, material, geometry) when replaced or
 // when the graph is destroyed.  Without this, every refresh/selection
 // change leaks SpriteText objects, each holding a canvas texture in VRAM.
-const nodeObjectCache = new Map<string, SpriteText>();
+const nodeObjectCache = new Map<string, THREE.Object3D>();
 const linkLabelCache = new Map<string, SpriteText>();
 
 /**
- * Dispose a SpriteText's GPU resources (canvas texture, material, geometry).
+ * Dispose a Three.js object's GPU resources recursively.
+ * Handles SpriteText, Groups, and any nested children.
  */
-function disposeSpriteText(sprite: SpriteText): void {
+function disposeObject3D(obj: THREE.Object3D): void {
   try {
-    // SpriteText extends THREE.Sprite — access inherited props via any
-    // since three-spritetext's type defs don't expose them.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const obj = sprite as any;
-    if (obj.material) {
-      if (obj.material.map) obj.material.map.dispose();
-      obj.material.dispose();
+    // Recursively dispose children first
+    for (const child of [...obj.children]) {
+      disposeObject3D(child);
     }
-    if (obj.geometry) obj.geometry.dispose();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const o = obj as any;
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      o.material.dispose();
+    }
+    if (o.geometry) o.geometry.dispose();
   } catch {
     // Silently ignore disposal errors
   }
 }
 
 /**
- * Dispose all cached node sprites.
+ * Dispose all cached node objects.
  */
 function disposeAllNodeObjects(): void {
-  for (const sprite of nodeObjectCache.values()) {
-    disposeSpriteText(sprite);
+  for (const obj of nodeObjectCache.values()) {
+    disposeObject3D(obj);
   }
   nodeObjectCache.clear();
 }
@@ -94,7 +100,7 @@ function disposeAllNodeObjects(): void {
  */
 function disposeAllLinkLabels(): void {
   for (const sprite of linkLabelCache.values()) {
-    disposeSpriteText(sprite);
+    disposeObject3D(sprite);
   }
   linkLabelCache.clear();
 }
@@ -168,7 +174,7 @@ export function initGraph(
       // Dispose old cached label for this link
       const oldLabel = linkLabelCache.get(link.id);
       if (oldLabel) {
-        disposeSpriteText(oldLabel);
+        disposeObject3D(oldLabel);
         linkLabelCache.delete(link.id);
       }
       const text = link.triggerKey || '';
@@ -275,6 +281,8 @@ export function destroyGraph(): void {
   selectedNodeId = null;
   highlightedNodeIds = null;
   connectSourceId = null;
+  connectedNodeIds.clear();
+  setSelectedNodeForEdges(null);
   hideTooltip();
 }
 
@@ -331,18 +339,18 @@ export function refreshGraph(
   // for all nodes/links.  The callbacks dispose old cached sprites internally.
   graph.graphData({ nodes: graphNodes, links: graphLinks });
 
-  // Clean up cached sprites for nodes/links that no longer exist (e.g. deleted entries)
+  // Clean up cached objects for nodes/links that no longer exist (e.g. deleted entries)
   const activeNodeIds = new Set(graphNodes.map((n) => n.id));
-  for (const [id, sprite] of nodeObjectCache) {
+  for (const [id, obj] of nodeObjectCache) {
     if (!activeNodeIds.has(id)) {
-      disposeSpriteText(sprite);
+      disposeObject3D(obj);
       nodeObjectCache.delete(id);
     }
   }
   const activeLinkIds = new Set(graphLinks.map((l) => l.id));
   for (const [id, sprite] of linkLabelCache) {
     if (!activeLinkIds.has(id)) {
-      disposeSpriteText(sprite);
+      disposeObject3D(sprite);
       linkLabelCache.delete(id);
     }
   }
@@ -441,7 +449,9 @@ export function focusNode(nodeId: string): void {
 
   // Select the node
   selectedNodeId = nodeId;
+  updateConnectedNodes();
   refreshNodeObjects();
+  refreshLinkStyles();
 }
 
 /**
@@ -584,6 +594,27 @@ function preventContextMenu(e: Event): void {
   e.preventDefault();
 }
 
+/**
+ * Update the set of node IDs connected to the currently selected node.
+ */
+function updateConnectedNodes(): void {
+  connectedNodeIds.clear();
+  if (!selectedNodeId) {
+    setSelectedNodeForEdges(null);
+    return;
+  }
+  setSelectedNodeForEdges(selectedNodeId);
+  for (const link of graphLinks) {
+    const srcId = typeof link.source === 'string' ? link.source : link.source.id;
+    const tgtId = typeof link.target === 'string' ? link.target : link.target.id;
+    if (srcId === selectedNodeId) {
+      connectedNodeIds.add(tgtId);
+    } else if (tgtId === selectedNodeId) {
+      connectedNodeIds.add(srcId);
+    }
+  }
+}
+
 function buildNode(
   entry: LorebookEntry,
   recursionEdges: RecursionEdge[],
@@ -670,16 +701,16 @@ function filterValidLinks(links: GraphLink[], nodes: GraphNode[]): GraphLink[] {
 }
 
 function createNodeObject(node: GraphNode): unknown {
-  // Dispose the previously cached sprite for this node (frees GPU texture/material/geometry)
-  const oldSprite = nodeObjectCache.get(node.id);
-  if (oldSprite) disposeSpriteText(oldSprite);
+  // Dispose the previously cached object for this node (frees GPU texture/material/geometry)
+  const oldObj = nodeObjectCache.get(node.id);
+  if (oldObj) disposeObject3D(oldObj);
 
-  const sprite = currentViewMode === 'sprites'
-    ? createLabelSprite(node, selectedNodeId, highlightedNodeIds, connectSourceId)
-    : createCardSprite(node, selectedNodeId, highlightedNodeIds, connectSourceId);
+  const obj = currentViewMode === 'sprites'
+    ? createLabelSprite(node, selectedNodeId, highlightedNodeIds, connectSourceId, connectedNodeIds)
+    : createCardSprite(node, selectedNodeId, highlightedNodeIds, connectSourceId, connectedNodeIds);
 
-  nodeObjectCache.set(node.id, sprite);
-  return sprite;
+  nodeObjectCache.set(node.id, obj);
+  return obj;
 }
 
 /**
@@ -688,6 +719,16 @@ function createNodeObject(node: GraphNode): unknown {
 function refreshNodeObjects(): void {
   if (!graph) return;
   graph.nodeThreeObject((node: GraphNode) => createNodeObject(node));
+}
+
+/**
+ * Force link styles to be recalculated (after selection changes).
+ */
+function refreshLinkStyles(): void {
+  if (!graph) return;
+  graph.linkColor(graph.linkColor());
+  graph.linkWidth(graph.linkWidth());
+  graph.linkOpacity(graph.linkOpacity());
 }
 
 // --- Event handlers ---
@@ -705,7 +746,9 @@ function handleNodeClick(node: any, event: MouseEvent): void {
   if (selectDisabled) return;
 
   selectedNodeId = node.id;
+  updateConnectedNodes();
   refreshNodeObjects();
+  refreshLinkStyles();
 
   EventBus.emit(STUDIO_EVENTS.NODE_SELECTED, {
     uid: parseInt(node.id),
@@ -757,7 +800,9 @@ function handleBackgroundClick(): void {
   hideTooltip();
   if (selectedNodeId) {
     selectedNodeId = null;
+    updateConnectedNodes();
     refreshNodeObjects();
+    refreshLinkStyles();
     EventBus.emit(STUDIO_EVENTS.NODE_DESELECTED);
   }
 }
@@ -879,13 +924,9 @@ function restorePositions(bookName: string, nodes: GraphNode[]): boolean {
   return hasPositions;
 }
 
-function getThemeBackground(theme?: ThemeName | string): string {
-  switch (theme) {
-    case 'nebula': return '#0f0a1a';
-    case 'ember': return '#161010';
-    case 'arctic': return '#0a1218';
-    default: return '#13111c';
-  }
+function getThemeBackground(_theme?: ThemeName | string): string {
+  // Transparent so the glassmorphic card wrapper and gradient mesh show through
+  return 'rgba(0,0,0,0)';
 }
 
 function zoomToFitAll(): void {

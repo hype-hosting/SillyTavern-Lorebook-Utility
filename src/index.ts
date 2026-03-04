@@ -5,7 +5,7 @@
  * Presents lorebook entries as draggable card-style nodes with
  * connection lines showing recursion relationships.
  *
- * @version 2.2.0
+ * @version 2.3.0
  * @author Hyperion
  * @license AGPL-3.0
  */

@@ -91,4 +91,7 @@ export const STUDIO_EVENTS = {
   STUDIO_META_UPDATED: 'ls:studio-meta-updated',
   CATEGORIES_CHANGED: 'ls:categories-changed',
   FILTERS_CHANGED: 'ls:filters-changed',
+  ENTRY_CARD_OPENED: 'ls:entry-card-opened',
+  ENTRY_CARD_CLOSED: 'ls:entry-card-closed',
+  GRAPH_CARD_TOGGLED: 'ls:graph-card-toggled',
 } as const;

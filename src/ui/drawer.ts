@@ -12,7 +12,7 @@ import { initGraph, destroyGraph, refreshGraph, runLayout, fitGraph, zoomIn, zoo
 import { LayoutName } from '../graph/layouts';
 import { getSettings, updateSettings, ThemeName } from '../utils/settings';
 import { initToolbarEvents } from './toolbar';
-import { initSidebar, closeSidebar } from './sidebar';
+import { initCardManager, closeAllCards, openEntryCard, hasOpenCards } from './cardManager';
 import { initStatsPanel } from './statsPanel';
 import { initContextMenu } from './contextMenu';
 import { initCategoryManager } from './categoryManager';
@@ -52,17 +52,14 @@ export function initDrawer(): void {
     if (!isOpen) return;
 
     if (evt.key === 'Escape') {
-      // Priority: popover > connect mode > sidebar > drawer
+      // Priority: popover > connect mode > cards > drawer
       if (closeAllPopovers()) return;
       if (isConnectModeActive()) {
         exitConnectMode();
+      } else if (hasOpenCards()) {
+        closeAllCards();
       } else {
-        const sidebar = document.getElementById('ls-sidebar');
-        if (sidebar && !sidebar.classList.contains('ls-sidebar-hidden')) {
-          closeSidebar();
-        } else {
-          closeDrawer();
-        }
+        closeDrawer();
       }
       return;
     }
@@ -178,12 +175,21 @@ export function initDrawer(): void {
     toggleEntryList();
   });
 
+  // Graph card toggle
+  document.getElementById('ls-btn-toggle-graph')?.addEventListener('click', toggleGraphCard);
+
   // Initialize popovers
   initPopovers();
 
   // Initialize sub-components
   initToolbarEvents();
-  initSidebar();
+
+  // Initialize floating entry cards (attach to content area so cards overlay the graph)
+  const contentArea = document.querySelector('.ls-content') as HTMLElement | null;
+  if (contentArea) {
+    initCardManager(contentArea);
+  }
+
   initStatsPanel();
   initContextMenu();
   initCategoryManager();
@@ -199,7 +205,6 @@ export function initDrawer(): void {
     renderEntryList();
   });
   EventBus.on(STUDIO_EVENTS.ENTRY_DELETED, () => {
-    closeSidebar();
     refreshCurrentGraph();
     renderEntryList();
   });
@@ -214,10 +219,13 @@ export function initDrawer(): void {
     renderEntryList();
   });
 
-  // Listen for node selection to highlight in entry list
+  // Listen for node selection to open entry card + highlight in entry list
   EventBus.on(STUDIO_EVENTS.NODE_SELECTED, (data: unknown) => {
-    const uid = (data as { uid: number })?.uid;
-    if (uid !== undefined && uid !== null) updateEntryListSelection(String(uid));
+    const { uid, bookName } = data as { uid: number; bookName: string };
+    if (uid !== undefined && uid !== null) {
+      updateEntryListSelection(String(uid));
+      if (bookName) openEntryCard(uid, bookName);
+    }
   });
   EventBus.on(STUDIO_EVENTS.NODE_DESELECTED, () => {
     updateEntryListSelection(null);
@@ -264,7 +272,7 @@ export function closeDrawer(): void {
 
   // Destroy graph to free resources
   destroyGraph();
-  closeSidebar();
+  closeAllCards();
   closeAllPopovers();
 
   EventBus.emit(STUDIO_EVENTS.DRAWER_CLOSED);
@@ -576,13 +584,6 @@ function updateStatusBar(text?: string, count?: string): void {
 
 // --- Theme support ---
 
-const THEME_BACKGROUNDS: Record<ThemeName, string> = {
-  midnight: '#13111c',
-  nebula: '#0f0a1a',
-  ember: '#161010',
-  arctic: '#0a1218',
-};
-
 function applyTheme(theme: ThemeName): void {
   const drawer = document.getElementById('ls-drawer');
   if (!drawer) return;
@@ -594,9 +595,27 @@ function applyTheme(theme: ThemeName): void {
     drawer.setAttribute('data-theme', theme);
   }
 
-  // Update the 3D graph background color (set programmatically by 3d-force-graph)
+  // Graph uses transparent background (glassmorphism shows through)
   const graph = getGraph();
   if (graph) {
-    graph.backgroundColor(THEME_BACKGROUNDS[theme] || THEME_BACKGROUNDS.midnight);
+    graph.backgroundColor('rgba(0,0,0,0)');
+  }
+}
+
+// --- Graph card toggle ---
+
+let graphCardVisible = true;
+
+function toggleGraphCard(): void {
+  const card = document.getElementById('ls-graph-card');
+  const btn = document.getElementById('ls-btn-toggle-graph');
+  if (!card) return;
+
+  graphCardVisible = !graphCardVisible;
+  card.classList.toggle('ls-graph-hidden', !graphCardVisible);
+  btn?.classList.toggle('active', graphCardVisible);
+
+  if (graphCardVisible) {
+    setTimeout(() => resizeGraph(), 50);
   }
 }

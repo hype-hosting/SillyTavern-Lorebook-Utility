@@ -4,6 +4,7 @@
  */
 
 import SpriteText from 'three-spritetext';
+import * as THREE from 'three';
 import { EntryStatus } from '../utils/settings';
 
 /** Data shape of a graph node (matches what graphManager builds). */
@@ -67,6 +68,12 @@ const HIGHLIGHTED_BG = '#352b5e';
 const HIGHLIGHTED_BORDER = '#a78bfa';
 const HIGHLIGHTED_TEXT = '#e0d7ff';
 const CONNECT_SOURCE_BORDER = '#d4a0c0';
+const CONNECTED_BG = '#2e2850';
+const CONNECTED_BORDER = '#8b7cf0';
+const CONNECTED_TEXT = '#c8c0e8';
+const UNCONNECTED_DIM_BG = '#1c1a28';
+const UNCONNECTED_DIM_BORDER = '#2e2a40';
+const UNCONNECTED_DIM_TEXT = '#5a5670';
 
 /**
  * Darken a hex color by mixing it toward black.
@@ -100,14 +107,24 @@ function buildStudioLabel(node: GraphNode, showKeywords: boolean): string {
   // Pin indicator
   if (node.pinned) parts.push('\u2605 ');
 
-  // Status dot
+  // Status indicator
   if (node.status) {
-    const dot = node.status === 'complete' ? '\u2713 ' : '\u25CF ';
-    parts.push(dot);
+    const statusIcons: Record<string, string> = {
+      'draft': '\u25CB ',
+      'in-progress': '\u25D4 ',
+      'review': '\u25D1 ',
+      'complete': '\u2713 ',
+    };
+    parts.push(statusIcons[node.status] || '\u25CF ');
   }
 
   // Name
   parts.push(node.comment || 'Unnamed Entry');
+
+  // Connection count badge
+  if (node.connectionCount > 0) {
+    parts.push(` (${node.connectionCount})`);
+  }
 
   // Notes indicator
   if (node.hasNotes) parts.push(' \u270E');
@@ -133,19 +150,22 @@ export function createCardSprite(
   selectedId: string | null,
   highlightedIds: Set<string> | null,
   connectSourceId: string | null,
-): SpriteText {
+  connectedIds?: Set<string>,
+): THREE.Object3D {
   const isSelected = node.id === selectedId;
   const isHighlighted = highlightedIds?.has(node.id) ?? false;
   const isDimmed = highlightedIds !== null && highlightedIds.size > 0 && !isHighlighted;
   const isConnectSource = node.id === connectSourceId;
+  const isConnected = connectedIds?.has(node.id) ?? false;
+  const hasSelection = selectedId !== null;
 
   const label = buildStudioLabel(node, true);
 
   const sprite = new SpriteText(label);
-  sprite.textHeight = 3;
+  sprite.textHeight = 3.5;
   sprite.fontFace = 'system-ui, -apple-system, sans-serif';
-  sprite.padding = 3;
-  sprite.borderRadius = 3;
+  sprite.padding = 5;
+  sprite.borderRadius = 5;
 
   // Get studio color (category or override)
   const studioColor = getStudioBorderColor(node);
@@ -166,31 +186,67 @@ export function createCardSprite(
     sprite.borderWidth = 1;
     sprite.borderColor = HIGHLIGHTED_BORDER;
     sprite.color = HIGHLIGHTED_TEXT;
+  } else if (isConnected) {
+    // Connected to the selected node — brighter
+    sprite.backgroundColor = CONNECTED_BG;
+    sprite.borderWidth = 1;
+    sprite.borderColor = studioColor || CONNECTED_BORDER;
+    sprite.color = CONNECTED_TEXT;
+  } else if (hasSelection && !node.disabled) {
+    // Unconnected to selected node — subtly dimmed
+    sprite.backgroundColor = UNCONNECTED_DIM_BG;
+    sprite.borderWidth = 0.5;
+    sprite.borderColor = UNCONNECTED_DIM_BORDER;
+    sprite.color = UNCONNECTED_DIM_TEXT;
   } else if (node.disabled) {
     sprite.backgroundColor = DISABLED_BG;
-    sprite.borderWidth = 0.5;
+    sprite.borderWidth = 0.6;
     sprite.borderColor = studioColor ? darkenColor(studioColor, 0.5) : DISABLED_BORDER;
     sprite.color = DISABLED_TEXT;
   } else if (studioColor) {
     // Category/override color takes priority for enabled entries
     sprite.backgroundColor = darkenColor(studioColor, 0.75);
-    sprite.borderWidth = 0.8;
+    sprite.borderWidth = 0.9;
     sprite.borderColor = studioColor;
     sprite.color = NODE_TEXT;
   } else {
     // Default: no category assigned
     sprite.backgroundColor = NODE_BG;
-    sprite.borderWidth = 0.5;
+    sprite.borderWidth = 0.8;
     sprite.borderColor = NODE_BORDER;
     sprite.color = NODE_TEXT;
   }
 
-  // Dimmed overrides
+  // Search dimmed overrides (takes priority over connection dimming)
   if (isDimmed) {
     sprite.backgroundColor = '#1a1825';
     sprite.borderColor = '#2a2740';
     sprite.color = '#4a4660';
     sprite.borderWidth = 0.3;
+  }
+
+  // Add glow halo for connected nodes
+  if (isConnected && !isDimmed) {
+    const glowColor = studioColor || CONNECTED_BORDER;
+    const glowSprite = new SpriteText(' ');
+    glowSprite.textHeight = sprite.textHeight;
+    glowSprite.fontFace = sprite.fontFace;
+    glowSprite.padding = (sprite.padding as number) + 4;
+    glowSprite.borderRadius = (sprite.borderRadius as number) + 2;
+    glowSprite.backgroundColor = glowColor;
+    glowSprite.borderWidth = 0;
+    glowSprite.color = 'transparent';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const glowMat = (glowSprite as any).material;
+    if (glowMat) {
+      glowMat.opacity = 0.15;
+      glowMat.transparent = true;
+    }
+
+    const group = new THREE.Group();
+    group.add(glowSprite);
+    group.add(sprite);
+    return group;
   }
 
   return sprite;
@@ -205,11 +261,14 @@ export function createLabelSprite(
   selectedId: string | null,
   highlightedIds: Set<string> | null,
   connectSourceId: string | null,
-): SpriteText {
+  connectedIds?: Set<string>,
+): THREE.Object3D {
   const isSelected = node.id === selectedId;
   const isHighlighted = highlightedIds?.has(node.id) ?? false;
   const isDimmed = highlightedIds !== null && highlightedIds.size > 0 && !isHighlighted;
   const isConnectSource = node.id === connectSourceId;
+  const isConnected = connectedIds?.has(node.id) ?? false;
+  const hasSelection = selectedId !== null;
 
   const name = (node.pinned ? '\u2605 ' : '') + (node.comment || 'Unnamed');
   const sprite = new SpriteText(name);
@@ -234,6 +293,14 @@ export function createLabelSprite(
     sprite.borderWidth = 0;
   } else if (isDimmed) {
     sprite.color = '#4a4660';
+    sprite.backgroundColor = false as unknown as string;
+    sprite.borderWidth = 0;
+  } else if (isConnected) {
+    sprite.color = studioColor || CONNECTED_TEXT;
+    sprite.backgroundColor = false as unknown as string;
+    sprite.borderWidth = 0;
+  } else if (hasSelection) {
+    sprite.color = UNCONNECTED_DIM_TEXT;
     sprite.backgroundColor = false as unknown as string;
     sprite.borderWidth = 0;
   } else if (studioColor) {

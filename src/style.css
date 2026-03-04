@@ -31,6 +31,16 @@
   --ls-radius: 10px;
   --ls-radius-sm: 6px;
   --ls-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Glassmorphism tokens */
+  --ls-glass-bg: rgba(19, 17, 28, 0.65);
+  --ls-glass-border: rgba(255, 255, 255, 0.08);
+  --ls-glass-blur: 16px;
+  --ls-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  /* Gradient mesh colors */
+  --ls-mesh-color-1: #7c6bde;
+  --ls-mesh-color-2: #d4a0c0;
+  --ls-mesh-color-3: #4a9eff;
+  --ls-mesh-color-4: #22d3ee;
 }
 
 /* --- Overlay --- */
@@ -53,6 +63,15 @@
 .ls-overlay.ls-open {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* --- Glassmorphism utility --- */
+.ls-glass {
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
+  border: 1px solid var(--ls-glass-border);
+  box-shadow: var(--ls-glass-shadow);
 }
 
 /* --- Drawer --- */
@@ -81,14 +100,40 @@
   display: flex;
   overflow: hidden;
   position: relative;
+  background: var(--ls-bg-primary);
+}
+
+.ls-main-layout::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 600px 600px at 20% 30%, var(--ls-mesh-color-1), transparent),
+    radial-gradient(ellipse 500px 500px at 80% 20%, var(--ls-mesh-color-2), transparent),
+    radial-gradient(ellipse 700px 700px at 60% 80%, var(--ls-mesh-color-3), transparent),
+    radial-gradient(ellipse 400px 400px at 30% 70%, var(--ls-mesh-color-4), transparent);
+  opacity: 0.07;
+  animation: ls-mesh-shift 25s ease-in-out infinite alternate;
+  will-change: background-position;
+}
+
+@keyframes ls-mesh-shift {
+  0% { background-position: 20% 30%, 80% 20%, 60% 80%, 30% 70%; }
+  33% { background-position: 40% 50%, 60% 40%, 40% 60%, 50% 30%; }
+  66% { background-position: 70% 20%, 30% 70%, 80% 40%, 20% 80%; }
+  100% { background-position: 50% 60%, 50% 50%, 30% 30%, 70% 50%; }
 }
 
 /* --- Left Toolbar --- */
 .ls-left-toolbar {
   width: var(--ls-left-toolbar-width);
   min-width: var(--ls-left-toolbar-width);
-  background: var(--ls-bg-secondary);
-  border-right: 1px solid var(--ls-border);
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
+  border-right: 1px solid var(--ls-glass-border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -177,13 +222,14 @@
   left: calc(var(--ls-left-toolbar-width) + 4px);
   top: 0;
   min-width: 200px;
-  background: var(--ls-bg-secondary);
-  border: 1px solid var(--ls-border-light);
+  background: var(--ls-glass-bg);
+  border: 1px solid var(--ls-glass-border);
   border-radius: var(--ls-radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ls-glass-shadow);
   padding: 12px;
   z-index: 100;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
 }
 
 .ls-pop-title {
@@ -252,13 +298,17 @@
 .ls-entry-list-panel {
   width: 260px;
   min-width: 260px;
-  background: var(--ls-bg-secondary);
-  border-right: 1px solid var(--ls-border);
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
+  border-right: 1px solid var(--ls-glass-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;
   transition: width var(--ls-transition), min-width var(--ls-transition), opacity var(--ls-transition);
+  position: relative;
+  z-index: 1;
 }
 
 .ls-entry-list-panel.ls-hidden {
@@ -366,19 +416,31 @@
   display: flex;
   overflow: hidden;
   position: relative;
+  z-index: 1;
+}
+
+/* --- Graph Card --- */
+.ls-graph-card {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  border-radius: var(--ls-radius);
+  margin: 8px;
+  overflow: hidden;
+  transition: opacity var(--ls-transition), transform var(--ls-transition);
+}
+
+.ls-graph-card.ls-graph-hidden {
+  display: none;
 }
 
 /* --- Graph Container --- */
 .ls-graph-container {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  height: 100%;
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 30% 20%, rgba(124, 107, 222, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 80%, rgba(212, 160, 192, 0.03) 0%, transparent 60%),
-    var(--ls-bg-primary);
-  background-attachment: fixed;
+  background: transparent;
 }
 
 /* --- Sidebar --- */
@@ -407,13 +469,15 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  background: var(--ls-bg-secondary);
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
   border-radius: 16px;
   margin: 8px;
   margin-left: 0;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--ls-glass-shadow);
   overflow: hidden;
-  border: 1px solid var(--ls-border-light);
+  border: 1px solid var(--ls-glass-border);
 }
 
 .ls-sidebar-resize-handle {
@@ -828,10 +892,12 @@
   transform: translate(-50%, -50%);
   width: 480px;
   max-height: 60vh;
-  background: var(--ls-bg-secondary);
-  border: 1px solid var(--ls-border);
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
+  border: 1px solid var(--ls-glass-border);
   border-radius: var(--ls-radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ls-glass-shadow);
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -938,14 +1004,15 @@
 /* --- Context Menu --- */
 .ls-context-menu {
   position: fixed;
-  background: var(--ls-bg-secondary);
-  border: 1px solid var(--ls-border-light);
+  background: var(--ls-glass-bg);
+  border: 1px solid var(--ls-glass-border);
   border-radius: var(--ls-radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ls-glass-shadow);
   z-index: 100000;
   min-width: 170px;
   padding: 4px 0;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
 }
 
 .ls-context-menu-item {
@@ -1016,13 +1083,14 @@
   position: fixed;
   z-index: 100001;
   max-width: 320px;
-  background: var(--ls-bg-secondary);
-  border: 1px solid var(--ls-border-light);
+  background: var(--ls-glass-bg);
+  border: 1px solid var(--ls-glass-border);
   border-radius: var(--ls-radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ls-glass-shadow);
   padding: 12px;
   pointer-events: none;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
 }
 
 .ls-tooltip-hidden {
@@ -1089,11 +1157,15 @@
   display: flex;
   justify-content: space-between;
   padding: 4px 16px;
-  background: var(--ls-bg-tertiary);
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
   font-size: 11px;
   color: var(--ls-text-secondary);
-  border-top: 1px solid var(--ls-border);
+  border-top: 1px solid var(--ls-glass-border);
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .ls-status-left {
@@ -1152,7 +1224,9 @@
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--ls-bg-card);
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
   border: 1px solid var(--ls-edge-manual);
   border-radius: var(--ls-radius);
   padding: 8px 20px;
@@ -1189,6 +1263,12 @@
   --ls-node-selected: #f0abfc;
   --ls-edge-auto: #a78bfa;
   --ls-edge-manual: #f0abfc;
+  --ls-glass-bg: rgba(15, 10, 26, 0.6);
+  --ls-glass-border: rgba(192, 132, 252, 0.1);
+  --ls-mesh-color-1: #c084fc;
+  --ls-mesh-color-2: #f0abfc;
+  --ls-mesh-color-3: #a78bfa;
+  --ls-mesh-color-4: #818cf8;
 }
 
 /* --- Ember: warm amber/copper palette --- */
@@ -1211,6 +1291,109 @@
   --ls-node-selected: #fbbf24;
   --ls-edge-auto: #fb923c;
   --ls-edge-manual: #f87171;
+  --ls-glass-bg: rgba(22, 16, 16, 0.6);
+  --ls-glass-border: rgba(245, 158, 11, 0.1);
+  --ls-mesh-color-1: #f59e0b;
+  --ls-mesh-color-2: #fb923c;
+  --ls-mesh-color-3: #f87171;
+  --ls-mesh-color-4: #fbbf24;
+}
+
+/* --- Floating Entry Cards --- */
+.ls-entry-card {
+  position: absolute;
+  width: 380px;
+  max-height: calc(100% - 24px);
+  z-index: 10;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ls-glass-bg);
+  backdrop-filter: blur(var(--ls-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ls-glass-blur));
+  border: 1px solid var(--ls-glass-border);
+  box-shadow: var(--ls-glass-shadow);
+}
+
+.ls-entry-card.ls-card-hidden {
+  display: none;
+}
+
+/* Snap positions */
+.ls-entry-card.ls-snap-right {
+  right: 12px;
+  top: 12px;
+}
+
+.ls-entry-card.ls-snap-pair-left {
+  left: 12px;
+  top: 12px;
+}
+
+.ls-entry-card.ls-snap-pair-right {
+  right: 12px;
+  top: 12px;
+}
+
+.ls-entry-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ls-border);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.ls-entry-card-header:active {
+  cursor: grabbing;
+}
+
+.ls-entry-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ls-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.ls-entry-card-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+}
+
+.ls-entry-card-footer {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--ls-border);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* Entry card scrollbar */
+.ls-entry-card-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ls-entry-card-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ls-entry-card-body::-webkit-scrollbar-thumb {
+  background: var(--ls-border);
+  border-radius: 3px;
+}
+
+.ls-entry-card-body::-webkit-scrollbar-thumb:hover {
+  background: var(--ls-border-light);
 }
 
 /* --- Arctic: cool blue/teal palette --- */
@@ -1233,4 +1416,10 @@
   --ls-node-selected: #67e8f9;
   --ls-edge-auto: #38bdf8;
   --ls-edge-manual: #a78bfa;
+  --ls-glass-bg: rgba(10, 18, 24, 0.6);
+  --ls-glass-border: rgba(34, 211, 238, 0.1);
+  --ls-mesh-color-1: #22d3ee;
+  --ls-mesh-color-2: #38bdf8;
+  --ls-mesh-color-3: #a78bfa;
+  --ls-mesh-color-4: #67e8f9;
 }
